@@ -18,10 +18,17 @@ class Order extends Model
             'user_id' => $user_id,
             'status' => $type,
             'pay_status' => '2',
-            'deleted' => '0',
+            'deleted' => 0,
         ];
 
-        $res_master = $this->field('order_id,order_num,pay_status,before_time,pay_status,pay_type')->where($where_master)->select();
+        $res_master = $this->field('order_id,mobile,user_id,address,note,
+        coupon_amount,order_num,pay_status,before_time,pay_status,pay_type,type')
+            ->where($where_master)
+            ->select();
+
+        if ($res_master == null) {
+            return null;
+        }
 
         $order_id = null;
         $row = null;
@@ -32,7 +39,11 @@ class Order extends Model
             $order_num = $value['order_num'];
 
             // 帮砍表
-            $res_bargain = Db::name('user_bargain')->field('present_price,already_price,highest_price')->where(['order_num' => "$order_num"])->find();
+            $res_bargain = Db::name('user_bargain')
+                ->field('present_price,already_price,highest_price')
+                ->where(['order_num' => "$order_num"])
+                ->find();
+
             // 如果一张订单有砍价记录
             if ($res_bargain != null) {
                 $rows[$value['order_id']]['present_price'] = $res_bargain['present_price'];
@@ -44,10 +55,22 @@ class Order extends Model
                 }
             }
 
+            // 优惠卷
+            $res_coupon = Db::name('user_coupon')
+                ->field('coupon_id')
+                ->where(['user_id' => $value['user_id'],'status' => 1])
+                ->find();
+
             $rows[$value['order_id']]['order_id'] = $value['order_id'];
             $rows[$value['order_id']]['order_num'] = $value['order_num'];
+            $rows[$value['order_id']]['order_note'] = $value['note'];
+            $rows[$value['order_id']]['mobile'] = $value['mobile'];
+            $rows[$value['order_id']]['address'] = $value['address'];
+            $rows[$value['order_id']]['coupon_id'] = $res_coupon['coupon_id'];
+            $rows[$value['order_id']]['coupon_amount'] = $value['coupon_amount'];
             $rows[$value['order_id']]['pay_status'] = $value['pay_status'];
             $rows[$value['order_id']]['before_time'] = $value['before_time'];
+            $rows[$value['order_id']]['type'] = $value['type'];
         }
         $order_id_str = join(',',$order_id);
 
@@ -65,13 +88,33 @@ class Order extends Model
                 $rows[$detail['order_id']]['total_amount'] += sprintf('%0.2f',$detail['price'] * $detail['num']);
             }
 
-            $res_goods = Db::name('goods_info')->field('images_url')->where(['id' => $gid])->find();
+            $res_goods = Db::name('goods_info')->field('id,images_url')->where(['id' => $gid])->find();
             $row['goods_img'] = $res_goods['images_url'];
+            $row['gid'] = $res_goods['id'];
             $rows[$detail['order_id']]['details'][] = $row;
         }
         $data = array_values($rows);
 
         return $data;
+    }
+
+    // 根据优惠券id返回优惠券金额
+    public static function getCoupon($id)
+    {
+        switch ($id) {
+            case '1' :
+                return 10;
+                break;
+            case '2' :
+                return 20;
+                break;
+            case '3' :
+                return 30;
+                break;
+            case '4' :
+                return 40;
+                break;
+        }
     }
 
     // 待接单
@@ -84,7 +127,14 @@ class Order extends Model
             'deleted' => '0',
         ];
 
-        $res_master = $this->field('order_id,order_num,pay_status,before_time,pay_status,pay_type,deal_amount')->where($where_master)->select();
+        $res_master = $this->field('order_id,order_num,pay_status
+        ,before_time,pay_status,pay_type,deal_amount')
+            ->where($where_master)
+            ->select();
+
+        if ($res_master == null) {
+            return null;
+        }
 
         $order_id = null;
         $row = null;
@@ -268,8 +318,15 @@ class Order extends Model
             'deleted' => 0,
         ];
 
-        $res_master = $this->field('user_id,order_id,order_num,address,mobile,before_time,make_time,deal_amount,pay_type,note')
-            ->where($where_details)->select();
+        $res_master = $this->field('user_id,order_id,order_num,address,mobile,before_time,
+        make_time,deal_amount,total_amount,pay_type,note,type,coupon_amount')
+            ->where($where_details)
+            ->select();
+
+        if ($res_master == null) {
+            return null;
+        }
+
         $row = null;
         $rows = null;
         $data = null;
@@ -278,14 +335,30 @@ class Order extends Model
             $order_id[] = $master['order_id'];
             $res_user = Db::name('address')->field('name')->where(['user_id' => $user_id,'default' => 1,'deleted' => 0])->find();
 
+            // 优惠卷
+            $res_coupon = Db::name('user_coupon')
+                ->field('coupon_id')
+                ->where(['user_id' => $master['user_id'],'status' => 1])
+                ->find();
+
+            $rows[$master['order_id']]['coupon_id'] = $res_coupon['coupon_id'];
+            $rows[$master['order_id']]['coupon_amount'] = $master['coupon_amount'];
+
             $rows[$master['order_id']]['order_id'] = $master['order_id'];
             $rows[$master['order_id']]['order_num'] = $master['order_num'];
             $rows[$master['order_id']]['address'] = $master['address'];
             $rows[$master['order_id']]['address_name'] = $res_user['name'].' '.$master['mobile'];
             $rows[$master['order_id']]['before_time'] = $master['before_time'];
             $rows[$master['order_id']]['make_time'] = $master['make_time'];
-            $rows[$master['order_id']]['deal_amount'] = $master['deal_amount'];
+            if ($status == 1) {
+                $rows[$master['order_id']]['total_amount'] = $master['total_amount'];
+            }
+
+            if ($status == 2) {
+                $rows[$master['order_id']]['total_amount'] = $master['deal_amount'];
+            }
             $rows[$master['order_id']]['note'] = $master['note'];
+            $rows[$master['order_id']]['type'] = $master['type'];
 
             if ($master['pay_type'] == 1) {
                 $rows[$master['order_id']]['pay_type'] = '直接支付';
@@ -301,6 +374,7 @@ class Order extends Model
             $res_goodsImg = Db::name('goods_info')->field('images_url')->where(['id' => $detail['gid'],'deleted' => 0])->find();
             $row['goods_name'] = $detail['goods_name'];
             $row['price'] = $detail['price'];
+            $row['gid'] = $detail['gid'];
             $row['num'] = $detail['num'];
             $row['images_url'] = $res_goodsImg['images_url'];
             $rows[$detail['order_id']]['details'][] = $row;
@@ -408,10 +482,79 @@ class Order extends Model
             ];
 
             $res = Db::name('user_order_evaluate')->insertGetId($data);
+
+            if ($res) {
+                // 评价成功,根据评价星级去更新医院或者医生的信用分,且只能是五星好评才执行
+                Order::updateCredit($grade, $doctor_id);
+            }
+
             return $res;
         }catch (\Exception $e) {
             Log::error($e->getMessage());
             return $e->getMessage();
+        }
+    }
+
+    // 根据评价更新信用分
+    public static function updateCredit($grade, $doctor_id)
+    {
+        if ($grade == 5) {
+            // 1.校验此医生性质,是已认证的医生还是医院下面的医生
+            // 医院下面的医生
+            $res_doc = Db::name('app_hospital_doctor')
+                ->field('hospital_id,doctor_id')
+                ->where(['doctor_id' => $doctor_id,'is_join' => 1])
+                ->find();
+
+            if ($res_doc) {
+                $hospital_id = $res_doc['hospital_id'];
+                $before_credit = Db::name('app_user_hospital')->field('credit')->where(['id' => $hospital_id])->find();
+                // 根据信用分区间获取规则下的每单应得信用分
+                $now_credit = Order::beforeCredit($before_credit['credit']);
+                // 更新医院表信用分
+                $credit = sprintf("%0.2f",$before_credit['credit'] + $now_credit);
+
+                Db::name('app_user_hospital')->where(['id' => $hospital_id])->update(['credit' => $credit]);
+            }
+
+            // 已认证的医生
+            $res_make = Db::name('app_user_doctor')
+                ->field('id')
+                ->where(['id' => $doctor_id,'is_prove' => 1])
+                ->find();
+
+            if ($res_make) {
+                $doctor_id = $res_make['id'];
+                $before_credit = Db::name('app_user_doctor')->field('credit')->where(['id' => $doctor_id])->find();
+                // 根据信用分区间获取规则下的每单应得信用分
+                $now_credit = Order::beforeCredit($before_credit['credit']);
+                // 更新医院表信用分
+                $credit = sprintf("%0.2f",$before_credit['credit'] + $now_credit);
+
+                Db::name('app_user_doctor')->where(['id' => $doctor_id])->update(['credit' => $credit]);
+            }
+        }
+    }
+
+    public static function beforeCredit($credit)
+    {
+        if ($credit >= 80 && $credit < 90) {
+            return 0.75;
+        }
+        if ($credit >= 90 && $credit < 100) {
+            return 0.35;
+        }
+        if ($credit >= 100 && $credit < 110) {
+            return 0.15;
+        }
+        if ($credit >= 110 && $credit < 120) {
+            return 0.06;
+        }
+        if ($credit >= 120 && $credit < 130) {
+            return 0.03;
+        }
+        if ($credit >= 130 && $credit < 140) {
+            return 0.02;
         }
     }
 

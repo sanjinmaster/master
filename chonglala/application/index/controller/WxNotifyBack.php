@@ -3,6 +3,7 @@
 namespace app\index\controller;
 
 use app\common\controller\Base;
+use app\common\controller\CreditScore;
 use app\index\model\WxNotifyBack as WxNotifyBackModel;
 use think\Controller;
 use think\Request;
@@ -41,9 +42,12 @@ class WxNotifyBack extends Base
         }
     }
 
-    // 回调、修改订单状态
+    // 支付成功回调、修改订单状态
     public function notifyBack()
     {
+        $param = $this->takePutParam();
+        CreditScore::getCreditScore($param);
+        die;
         // 获取参数
         $xmlData = file_get_contents('php://input');
         libxml_disable_entity_loader(true);
@@ -56,6 +60,14 @@ class WxNotifyBack extends Base
         $WxNotifyBackModel = new WxNotifyBackModel();
         $res = $WxNotifyBackModel->updateOrderStatus($result);
 
+        /*if ($res) {
+            // 支付成功后根据医院和医生的信用分、距离进行随机派单
+
+            // 获取信用分
+            $credit_score = CreditScore::getCreditScore($result);
+
+        }*/
+
         return $this->successReturn('200',$res);
     }
 
@@ -66,9 +78,16 @@ class WxNotifyBack extends Base
         $xmlData = file_get_contents('php://input');
         libxml_disable_entity_loader(true);
         $result = json_decode(json_encode(simplexml_load_string($xmlData, 'SimpleXMLElement', LIBXML_NOCDATA)), true);
-        if (!$result) {
-            return $this->errorReturn('1001','请求参数不合法',$result);
-        }
+
+        // 解密req_info
+        $req_info = $result['req_info'];
+        $mch_key = "938bfd36a2f5c90f66c59fe51c5e653d";
+
+        // 解密后的req_info
+        $decryptReqInfo = WxNotifyBack::decipheringReqInfo($mch_key,$req_info);
+
+        $result['out_refund_no'] = $decryptReqInfo['out_refund_no'];
+        $result['refund_fee'] = $decryptReqInfo['refund_fee'];
 
         // 根据订单编号修改状态
         $WxNotifyBackModel = new WxNotifyBackModel();

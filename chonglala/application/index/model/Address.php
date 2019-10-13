@@ -51,6 +51,7 @@ class Address extends Model
             $this->initialAddressDefaultState($postdata['user_id']);
         }
         $res = Db::name('address')->insertGetId($data);
+
         return $res;
     }
 

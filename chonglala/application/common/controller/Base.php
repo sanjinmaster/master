@@ -10,6 +10,36 @@ use think\Loader;
 use think\Request;
 use think\db;
 
+//安全公钥和私钥
+define('PRIVATE_KEY','-----BEGIN RSA PRIVATE KEY-----
+MIICXQIBAAKBgQCq38pvqT//Luuuw105mQ5sDDIV13rgdQzTr8Ccik1YqpuaJE0K
+59dOcl2KdAd7e50O1TZlh9bwOp9MPpVvIDzdlGsQEDRV7kxgsxTpF4dqI4SYUBYg
+6B31Wh0TpYAEG95FIweF9P/7Q9fH2oSpveL0jPYyhvPvzXtq5K8qj6cL3QIDAQAB
+AoGAM99B/gm8MsRUqbYG+/A5z5UYM0c5tx/xZ+XHq/3UIyGPoQh6FuBwnRDc0qYM
+i3DoKdOR8tp85mp1Z1jsVlLMBtzsqUIxv5uqj8kDwBdZnNunZ8dvC1TU3UUwPaYJ
+xcDd9tMTm7KisDAZ7bOJc2aCuhtQ1D0EYPXSZT+KcGDW/IECQQDZnzJgUUBQmAxs
+zCGoH8DxznxyYjQjJxtKbToMVMoP0VZfXIPd3UfjL5AIrhI1InS/kSxRlcNI5gay
+kNUkyLw9AkEAyQIc/ALr2wDVeGI3gqIDOZvQmxOwMMdrshGh9JZgp4UbUvszoJg8
+Nr74bZkZQ+9DzOTEJf7+LePohsqAqWZoIQJAMyP3Ka1OaOIiYVrjOegkZm64zgSH
+7g7dmfLrJkSyq17tZkGOd4/tudTOi0uk2bm8J9yMxqtkFfiAcGwauqc1nQJBAKN0
+aXdxNLQxeGXdkIBVGMRG9Zq1pufzsprqBcYsZsqyzeZrya7FPOnT35bYEZiRv5Ol
+T/AJ7E4K7/J0R635TaECQQCxSiG5stx4f+Oev2tPXvuyoGLD9Up7c8TNSpKM0MK4
+OIKoNavobvk1sLTugzenVuPH3KjbyFzO++vvlYTHp2cn
+-----END RSA PRIVATE KEY-----
+');
+
+define('PUBLIC_SRV_KEY','-----BEGIN PUBLIC KEY-----
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCq38pvqT//Luuuw105mQ5sDDIV
+13rgdQzTr8Ccik1YqpuaJE0K59dOcl2KdAd7e50O1TZlh9bwOp9MPpVvIDzdlGsQ
+EDRV7kxgsxTpF4dqI4SYUBYg6B31Wh0TpYAEG95FIweF9P/7Q9fH2oSpveL0jPYy
+hvPvzXtq5K8qj6cL3QIDAQAB
+-----END PUBLIC KEY-----
+');
+
+//用于app端的公钥
+define('PUBLIC_APP_KEY','-----BEGIN PUBLIC KEY----- MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCq38pvqT//Luuuw105mQ5sDDIV 13rgdQzTr8Ccik1YqpuaJE0K59dOcl2KdAd7e50O1TZlh9bwOp9MPpVvIDzdlGsQ EDRV7kxgsxTpF4dqI4SYUBYg6B31Wh0TpYAEG95FIweF9P/7Q9fH2oSpveL0jPYy hvPvzXtq5K8qj6cL3QIDAQAB -----END PUBLIC KEY-----');
+
+
 class Base extends Controller
 {
     //阿里云OSS
@@ -17,6 +47,61 @@ class Base extends Controller
     public $accessKeySecret = "JsOOIJzQSAquMLX1mBQZ9OIs8mSeGl";
     public $endpoint = "http://oss-cn-hangzhou.aliyuncs.com";
     public $bucket = "exam-181212";
+
+    //百度地图api
+    public $ak = 'LlAFZ1WtwIYOwCxAcVp96luiWoH651yn';  //改版后，服务端和客户端key值不能共用
+
+    //用rsa加密
+    public static function rsa_encode($data)
+    {
+        //$pi_key =  openssl_pkey_get_private(PRIVATE_KEY);
+        $pu_key = openssl_pkey_get_public(PUBLIC_SRV_KEY);
+
+        if(is_array($data)){ $data = json_encode($data); }
+        openssl_public_encrypt($data, $encrypted, $pu_key);//公钥加密
+        $encrypted = base64_encode($encrypted);// base64传输
+        //echo $encrypted,"<br/>";
+
+        return $encrypted;
+    }
+
+    //用rsa解密
+    public static function rsa_decode($encrypted)
+    {
+        $pi_key =  openssl_pkey_get_private(PRIVATE_KEY);
+        //$pu_key = openssl_pkey_get_public(PUBLIC_SRV_KEY);
+        openssl_private_decrypt(base64_decode($encrypted), $decrypted, $pi_key);//私钥解密
+
+        return $decrypted;
+    }
+
+    // 对象转数组
+    public static function object_switch_array($array) {
+        if(is_object($array)) {
+            $array = (array)$array;
+        }
+        if(is_array($array)) {
+            foreach($array as $key=>$value) {
+                $array[$key] =self::object_switch_array($value);
+            }
+        }
+        return $array;
+    }
+
+    // 校验密码是否为弱口令及密码位数
+    public static function checkPwd($pwd)
+    {
+        $res = preg_match('/(?![A-Z]+$)(?![a-z]+$)(?!\d+$)(?![\W_]+$)\S{8,16}$/', $pwd);
+        return $res;
+    }
+
+    // 获取app端token
+    public static function getToken($mobile, $password, $time)
+    {
+        $str = md5(uniqid(md5($mobile.$password.$time)),true);  //生成一个不会重复的字符串
+        $str = sha1($str);  //SHA1加密
+        return $str;
+    }
 
     /**
      * 用户登录token
@@ -32,6 +117,7 @@ class Base extends Controller
         ]);
         return $token;
     }
+
     /**
      * 鉴权
      */
@@ -54,6 +140,7 @@ class Base extends Controller
         ]);
         return 1;
     }
+
     /**
      * 获取前端传过来的json数据
      */
@@ -136,6 +223,7 @@ class Base extends Controller
         $return["data"] = $data;
         return json_encode($return,JSON_UNESCAPED_UNICODE);
     }
+
     /**
      * 返回失败数据
      */
@@ -260,5 +348,72 @@ class Base extends Controller
         $str = substr($str,3);
         $data['str'] = $str;
         return $this->successReturn('200',$data);
+    }
+
+    // 获取header头部token
+    protected function takeHeaderToken()
+    {
+        if (!Request::instance()->header('token')){
+            return $this->requestData();
+        }
+        return Request::instance()->header('token');
+    }
+
+    /**
+     * 根据地址获取经纬度
+     */
+    public function getLatLong($address){
+        $key = $this->ak;
+        $address = urlencode($address);
+        $url='http://api.map.baidu.com/geocoder/v2/?address='.$address.'&output=json&ak='.$key;
+        if($result=file_get_contents($url))
+        {
+            $res= explode(',"lat":', substr($result, 40,36));
+            return  $res;
+        }
+    }
+
+
+
+    /**
+     * 根据起点坐标和终点坐标测距离
+     * @param  [array]   $from     [起点坐标(经纬度),例如:array(118.012951,36.810024)]
+     * @param  [array]   $to     [终点坐标(经纬度)]
+     * @param  [bool]    $km        是否以公里为单位 false:米 true:公里(千米)
+     * @param  [int]     $decimal   精度 保留小数位数
+     * @return [string]  距离数值
+     */
+    function getDistance($from,$to,$km=true,$decimal=2){
+        sort($from);
+        sort($to);
+        $EARTH_RADIUS = 6370.996; // 地球半径系数
+
+        $distance = $EARTH_RADIUS*2*asin(sqrt(pow(sin( ($from[0]*pi()/180-$to[0]*pi()/180)/2),2)+cos($from[0]*pi()/180)*cos($to[0]*pi()/180)* pow(sin( ($from[1]*pi()/180-$to[1]*pi()/180)/2),2)))*1000;
+
+        if($km){
+            $distance = $distance / 1000;
+        }
+
+        return round($distance, $decimal);
+    }
+
+    /**
+     * 根据经纬度获取城市
+     */
+    public function getCityByLng($lng,$lat)
+    {
+        $key = $this->ak;
+        $url='http://api.map.baidu.com/geocoder?location='.$lat.','.$lng.'&output=json&ak='.$key;
+        if($result=file_get_contents($url))
+        {
+            return $result;
+        }
+    }
+
+    // 解密req_info,用于微信退款的回调
+    public static function decipheringReqInfo($mch_key, $req_info)
+    {
+        $xml = openssl_decrypt(base64_decode($req_info),'aes-256-ecb',md5($mch_key),OPENSSL_RAW_DATA);
+        return json_decode(json_encode(simplexml_load_string($xml, 'SimpleXMLElement', LIBXML_NOCDATA)), true);
     }
 }

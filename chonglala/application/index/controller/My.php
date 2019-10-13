@@ -33,6 +33,27 @@ class My extends Base
         return $this->successReturn('200',$res);
     }
 
+    // 下级详情
+    public function nextDetails()
+    {
+        $param = $this->takeGetParam();
+
+        $validate = new \think\Validate([
+            ['user_id', ['require','number'],''],
+        ]);
+        if (!$validate->check($param)) {
+            return $this->errorReturn('1001','请求参数不符合要求',$param);
+        }
+
+        $user_id = $param['user_id'];
+
+
+        $MyModel = new MyModel();
+        $res = $MyModel->getNextInfo($user_id);
+
+        return $this->successReturn('200',$res);
+    }
+
     // 分享
     public function sharePet()
     {
@@ -57,10 +78,6 @@ class My extends Base
 
         $MyModel = new MyModel();
         $res = $MyModel->getCouponInfo($user_id, $status);
-
-        if (!$res){
-            return $this->successReturn('6001',$res);
-        }
 
         return $this->successReturn('200',$res);
     }
@@ -141,6 +158,28 @@ class My extends Base
         if (!$res){
             return $this->successReturn('6001','你已经绑定过支付宝账号了');
         }
+
+        return $this->successReturn('200',$res);
+    }
+
+    // 修改支付宝账号
+    public function updateAliPay()
+    {
+        $param = $this->takePatchParam();
+
+        $validate = new \think\Validate([
+            ['user_id', ['require','number'],''],
+            ['alipay', ['require','number'],''],
+        ]);
+        if (!$validate->check($param)) {
+            return $this->errorReturn('1001','请求参数不符合要求',$param);
+        }
+
+        $user_id = $param['user_id'];
+        $alipay = $param['alipay'];
+
+        $MyModel = new MyModel();
+        $res = $MyModel->editAliPay($user_id, $alipay);
 
         return $this->successReturn('200',$res);
     }

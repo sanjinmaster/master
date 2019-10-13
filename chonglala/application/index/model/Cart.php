@@ -111,7 +111,7 @@ class Cart extends Model
         foreach ($cart as $value) {
 
             $where = ['id' => $value['gid'],'cid' => $value['cid']];
-            $goods = Db::name('goods_info')->field('id,cid,goods_name,price')->where($where)->find();
+            $goods = Db::name('goods_info')->field('id,cid,goods_name,price,images_url')->where($where)->find();
             // 如果有上门疫苗
             if ($goods['cid'] == 3 || $goods['cid'] == 7) {
                 $row_yimiao['gid'] = $goods['id'];
@@ -119,6 +119,7 @@ class Cart extends Model
                 $row_yimiao['goods_name'] = $goods['goods_name'];
                 $row_yimiao['price'] = $goods['price'];
                 $row_yimiao['num'] = $value['num'];
+                $row_yimiao['images_url'] = $goods['images_url'];
                 $rows_yimiao[] = $row_yimiao;
                 $data['yimiao'] = $rows_yimiao;
             }
@@ -130,6 +131,7 @@ class Cart extends Model
                 $row_tijian['goods_name'] = $goods['goods_name'];
                 $row_tijian['price'] = $goods['price'];
                 $row_tijian['num'] = $value['num'];
+                $row_tijian['images_url'] = $goods['images_url'];
                 $rows_tijian[] = $row_tijian;
                 $data['tijian'] = $rows_tijian;
             }
@@ -141,6 +143,7 @@ class Cart extends Model
                 $row_meirong['goods_name'] = $goods['goods_name'];
                 $row_meirong['price'] = $goods['price'];
                 $row_meirong['num'] = $value['num'];
+                $row_meirong['images_url'] = $goods['images_url'];
                 $rows_meirong[] = $row_meirong;
                 $data['meorong'] = $rows_meirong;
             }
@@ -152,6 +155,7 @@ class Cart extends Model
                 $row_huohua['goods_name'] = $goods['goods_name'];
                 $row_huohua['price'] = $goods['price'];
                 $row_huohua['num'] = $value['num'];
+                $row_huohua['images_url'] = $goods['images_url'];
                 $rows_huohua[] = $row_huohua;
                 $data['huohua'] = $rows_huohua;
             }

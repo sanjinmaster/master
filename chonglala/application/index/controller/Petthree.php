@@ -58,8 +58,9 @@ class Petthree extends Base
         $page = $param['page'];
         $pageSize = $param['pageSize'];
 
+        $order = 'id desc';
         $Petthree = new PetthreeModel();
-        $res = $Petthree->speakList($keyword, $page, $pageSize);
+        $res = $Petthree->speakList($order, $keyword, $page, $pageSize);
 
         if (!$res) {
             return $this->errorReturn('1002','没有默认数据',$res);
@@ -75,8 +76,6 @@ class Petthree extends Base
 
         // 检验参数
         $validate = new \think\Validate([
-            ['page', ['require','number'],''],
-            ['pageSize', ['require','number'],''],
             ['id', ['require','number'],''],
         ]);
         if (!$validate->check($param)) {
@@ -84,12 +83,11 @@ class Petthree extends Base
         }
 
         $keyword = $param['keyword'];
-        $page = $param['page'];
-        $pageSize = $param['pageSize'];
+
         $id = $param['id'];
 
         $Petthree = new PetthreeModel();
-        $res = $Petthree->zdList($keyword, $page, $pageSize, $id);
+        $res = $Petthree->zdList($keyword, $id);
 
         if (!$res) {
             return $this->errorReturn('1002','没有默认数据',$res);

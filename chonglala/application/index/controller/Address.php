@@ -42,6 +42,7 @@ class Address extends Base
         $param = $this->takeGetParam();
         $page = $param['page'];
         $pageSize = $param['pageSize'];
+
         $validate = new \think\Validate([
             ['page', ['require','number'],''],
             ['pageSize', ['require','number'],''],
@@ -53,9 +54,11 @@ class Address extends Base
 
         $address = new \app\index\model\Address();
         $data = $address->getAddressList(['user_id' => $param['user_id']],'',$pageSize,$page);
-        if (!$data['now_page_content']){
+        
+/*        if (!$data['now_page_content']){
             return $this->successReturn('6001',$data);
         }
+        */
         return $this->successReturn('200',$data);
     }
 
@@ -79,7 +82,7 @@ class Address extends Base
 
         $address = new \app\index\model\Address();
         $data = $address->createAddress($param);
-        return $this->successReturn('201',$data);
+        return $this->successReturn('200',$data);
     }
 
     /**
@@ -98,7 +101,7 @@ class Address extends Base
 
         $address = new \app\index\model\Address();
         $data = $address->updateAddress($param['id'],$param);
-        return $this->successReturn('201',$data);
+        return $this->successReturn('200',$data);
     }
 
     /**
@@ -117,6 +120,6 @@ class Address extends Base
 
         $address = new \app\index\model\Address();
         $data = $address->deleteAddress($param['id']);
-        return $this->successReturn('204',$data);
+        return $this->successReturn('200',$data);
     }
 }

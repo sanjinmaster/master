@@ -168,8 +168,10 @@ Route::get('pet/home/getDefaultAddress','index/Settlement/getDefaultAddress');
 
 // 首页-业务分类(上门疫苗、上门体检、上门美容、上门火化)-去支付
 Route::post('pet/home/pay','index/Pay/makePay');
+// 待付款-去支付
+Route::put('pet/home/makePayDfk','index/Pay/makePayDfk');
 // 首页-业务分类(上门疫苗、上门体检、上门美容、上门火化)-支付回调
-Route::put('pet/home/notifyBack','index/WxNotifyBack/notifyBack');
+Route::any('pet/home/notifyBack','index/WxNotifyBack/notifyBack');
 
 // 首页-业务分类(上门疫苗、上门体检、上门美容、上门火化)-商品列表-去结算,去砍价
 Route::post('pet/home/bargain','index/Bargain/bargain');
@@ -204,7 +206,7 @@ Route::get('pet/my/personalInfo','index/My/personalInfo');
 // 分享
 Route::post('pet/my/sharePet','index/My/sharePet');
 // 我的-头部个人信息-下级详情
-Route::get('pet/my/nextDetails','index/banner/banner');
+Route::get('pet/my/nextDetails','index/My/nextDetails');
 // 我的-头部个人信息-奖励金详情
 Route::get('pet/my/rewardDetails','index/My/rewardDetails');
 // 我的-头部个人信息-奖励金提现
@@ -213,6 +215,8 @@ Route::post('pet/my/rewardOut','index/My/rewardOut');
 Route::get('pet/my/moneyDetails','index/My/moneyDetails');
 // 绑定支付宝账号
 Route::post('pet/my/bindAliPay','index/My/bindAliPay');
+// 修改支付宝账号
+Route::patch('pet/my/editAliPay','index/My/editAliPay');
 // 我的-头部个人信息-优惠券详情
 Route::get('pet/my/couponDetails','index/My/getCoupon');
 // 我的-我的订单-状态详情(待付款、待接单、待服务、待确认、已完成)
@@ -232,9 +236,9 @@ Route::put('pet/my/confirmOrder','index/Order/confirmOrder');
 // 我的-我的订单-待服务-删除订单,待付款
 Route::delete('pet/my/cancelOrderDfk','index/Order/cancelOrderDfk');
 // 我的-我的订单-待服务-删除订单,待接单、待服务
-Route::post('pet/my/cancelOrderDjdDfw','index/Pay/cancelOrderDjdDfw');
-// 取消回调
-Route::post('pet/my/cancelBack','index/WxNotifyBack/cancelBack');
+Route::put('pet/my/cancelOrderDjdDfw','index/Pay/cancelOrderDjdDfw');
+// 退款回调
+Route::any('pet/my/cancelBack','index/WxNotifyBack/cancelBack');
 // 我的-我的订单-待服务-去评价
 Route::post('pet/my/evaluateNote','index/Order/evaluateNote');
 // 我的-我的服务-意见反馈
@@ -248,20 +252,22 @@ Route::post('pet/my/feedback','index/My/ideaBack');
  *  APP医生端
  */
 
+// 注册时获取rsa公钥
+Route::get('app/publicRsaKey','api/Register/publicRsaKey');
 // 发送验证码
-Route::post('app/sendCode','api/Register/send');
-// 注册-医院
-Route::post('app/hospital/register','index/banner/banner');
-// 注册-医院-资料填写
-Route::post('app/hospital/addData','index/banner/banner');
-// 注册-医生
-Route::post('app/doctor/register','index/banner/banner');
-// 注册-医生-资料填写
-Route::post('app/doctor/addData','index/banner/banner');
+Route::post('app/sendSms','api/Register/sendSmsPublic');
+// 注册-医生、医院
+Route::post('app/doctor/register','api/Register/doctorRegister');
+// 更新医生注册资料
+Route::patch('app/doctor/updateDoctor','api/Register/updateDoctor');
+// 更新医院注册资料
+Route::patch('app/hospital/updateHospital','api/Register/updateHospital');
 // 登录-医院、医生
-Route::post('app/login','index/banner/banner');
+Route::get('app/login','api/Login/login');
+// 注销登录-医院、医生
+Route::delete('app/logout','api/Login/logout');
 // 忘记密码-医院、医生
-Route::put('app/forgetPwd','index/banner/banner');
+Route::put('app/forgetPwd','api/Register/forgetPwd');
 
 // 接单-认证过的医生-列表(待接单、待服务、待确认、已完成)
 Route::get('app/order/orderList','index/banner/banner');
@@ -286,14 +292,60 @@ Route::post('app/order/agrOrder','index/banner/banner');
 // 接单-医院下面的医生-待服务-确认联系
 Route::get('app/order/agrTel','index/banner/banner');
 
-// 我的-医院-基础信息(包含头像、医院名称、联系方式、账户金额、工作状态)
-Route::get('app/my/hosInfo','index/banner/banner');
+
+// 我的-医生-头部信息
+Route::get('app/doctor/headInfo','api/DoctorMy/myInfo');
+// 我的-医生-更换头像
+Route::put('app/doctor/doctor/switchHeadImg','api/DoctorMy/switchHeadImg');
+// 我的-医生-修改昵称
+Route::put('app/doctor/editNickname','api/DoctorMy/switchNickname');
+// 我的-医生-修改登录密码
+Route::put('app/doctor/updatePass','api/DoctorMy/updatePwd');
+// 我的-医生-修改手机号-下一步
+Route::get('app/doctor/next','api/DoctorMy/next');
+// 我的-医生-修改手机号-提交
+Route::put('app/doctor/submit','api/DoctorMy/submit');
+// 我的-医生-工作中
+Route::put('app/doctor/doctorWorkIng','api/Work/doctorWorkIng');
+// 我的-医生-休息
+Route::put('app/doctor/doctorWorkOut','api/Work/doctorWorkOut');
+// 我的-医生-所属医院、地址
+Route::get('app/doctor/getHospitalInfo','api/DoctorMy/getHospitalInfo');
+// 我的-医生-加入、解绑医院
+Route::put('app/doctor/joinHospital','api/Bind/isJoinHospital');
+// 我的-医生-我的评价
+Route::get('app/doctor/getEvaluate','api/Evaluate/getEvaluate');
+// 我的-医生-回复评价
+Route::patch('app/doctor/backEvaluate','api/Evaluate/backEvaluate');
+
+// 我的-医生-认证
+Route::post('app/my/attestation','index/banner/banner');
+
+// 我的-医院-头部信息
+Route::get('app/hospital/headInfo','api/HospitalMy/myInfo');
 // 我的-医院-医院信息-更换头像
-Route::put('app/my/switchImg','index/banner/banner');
-// 我的-医院-医院信息-修改手机号
-Route::put('app/my/updateMobile','index/banner/banner');
-// 我的-医院-医院信息-修改登录密码
-Route::put('app/my/updatePass','index/banner/banner');
+Route::put('app/hospital/switchImg','api/HospitalMy/switchHeadImg');
+// 我的-医院-修改登录密码
+Route::put('app/hospital/updatePass','api/HospitalMy/updatePwd');
+// 我的-医院-修改手机号-下一步
+Route::get('app/hospital/next','api/HospitalMy/next');
+// 我的-医院-修改手机号-提交
+Route::put('app/hospital/submit','api/HospitalMy/submit');
+// 我的-医院-工作中
+Route::put('app/hospital/hospitalWorkIng','api/Work/hospitalWorkIng');
+// 我的-医院-休息
+Route::put('app/hospital/hospitalWorkOut','api/Work/hospitalWorkOut');
+// 我的-医院-所属医院、地址
+Route::get('app/hospital/getHospitalInfo','api/HospitalMy/HospitalAddress');
+// 我的-医院-添加医生
+Route::post('app/hospital/addDoctor','api/HospitalMy/addDoctor');
+// 我的-医院-我的医生
+Route::get('app/hospital/myDoctor','api/HospitalMy/myDoctor');
+// 我的-医院-我的评价
+Route::get('app/hospital/getEvaluate','api/Evaluate/getHosEvaluate');
+// 我的-医院-回复评价
+Route::patch('app/hospital/backEvaluate','api/Evaluate/backHosEvaluate');
+
 // 我的-医院-账户-列表
 Route::get('app/my/hosListAmt','index/banner/banner');
 // 我的-医院-账户-提现
@@ -310,16 +362,6 @@ Route::get('app/my/evaluate','index/banner/banner');
 Route::get('app/my/myDoctor','index/banner/banner');
 // 我的-医院-添加医生
 Route::post('app/my/addDoctor','index/banner/banner');
-// 我的-医生-头部信息
-Route::get('app/my/headInfo','index/banner/banner');
-// 我的-医生-修改昵称
-Route::put('app/my/editNickname','index/banner/banner');
-// 我的-医生-认证
-Route::post('app/my/attestation','index/banner/banner');
-// 我的-医生-所属医院
-Route::get('app/my/belong','index/banner/banner');
-// 我的-医生-加入医院
-Route::post('app/my/joinHos','index/banner/banner');
 
 
 

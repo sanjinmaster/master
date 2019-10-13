@@ -51,6 +51,7 @@ class Code extends Base
             '1001' => "Param Incomplete",           //请求参数不符合要求
             '1002' => "Param content error",        //无满足条件的返回
             '1005' => "文件上传失败",
+            '9003' => "token过期",
         ];
         $msg = "状态码不存在";
         foreach ($code_arr as $key => $value){

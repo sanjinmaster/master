@@ -168,14 +168,17 @@ class Service extends Base
 
         $validate = new \think\Validate([
             ['key_word', ['require'],''],
+            ['user_id', ['require'],''],
         ]);
         if (!$validate->check($param)) {
             return $this->errorReturn('1001','请求参数不符合要求',$param);
         }
 
+        $user_id = $param['user_id'];
         $key_word = $param['key_word'];
         $ServiceModel = new ServiceModel();
-        $res = $ServiceModel->searchGoods($key_word);
+        $res = $ServiceModel->searchGoods($user_id, $key_word);
+
         if ($res == null) {
             return $this->errorReturn('1002','没有找到您想要的内容',$param);
         }

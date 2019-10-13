@@ -21,10 +21,12 @@ class WxNotifyBack extends Model
             'pay_status' => 2,
             'total_amount' => $param['total_amount'],
             'make_time' => date("Y-m-d H:i:s",time()),
+            'make_date' => date("Y-m-d",time()),
             'before_time' => $param['before_time'],
             'pay_type' => 1,
             'coupon_amount' => $param['coupon_amount'],
             'note' => $param['order_note'],
+            'type' => 1,
         ];
 
         try{
@@ -106,10 +108,12 @@ class WxNotifyBack extends Model
             'pay_status' => 2,
             'total_amount' => $param['total_amount'],
             'make_time' => date("Y-m-d H:i:s",time()),
+            'make_date' => date("Y-m-d",time()),
             'before_time' => $param['before_time'],
             'pay_type' => 1,
             'coupon_amount' => $param['coupon_amount'],
             'note' => $param['order_note'],
+            'type' => 2,
         ];
 
         try{
@@ -147,7 +151,7 @@ class WxNotifyBack extends Model
         }catch (\Exception $e) {
             // 回滚
             $this->rollback();
-            Log::error($e->getMessage());
+            Log::write($e->getMessage());
             return $e->getMessage();
         }
 
@@ -163,38 +167,52 @@ class WxNotifyBack extends Model
     // 更改优惠券状态
     protected function updateCouponStatus($coupon_id, $user_id)
     {
-        return Db::name('user_coupon')->where(['coupon_id' => $coupon_id,'user_id' => $user_id])->update(['status' => 1,'update_time' => date("Y-m-d H:i:s",time())]);
+        $res = Db::name('user_coupon')->where(['coupon_id' => $coupon_id,'user_id' => $user_id])->update(['status' => 1,'update_time' => date("Y-m-d H:i:s",time())]);
+        if ($res) {
+            // 更新优惠券数量
+            $count = Db::name('user')->where(['user_id' => $user_id,'status' => 1])->count();
+            return Db::name('user')->where(['user_id' => $user_id])->update(['coupon_num' => $count - 1]);
+        }
     }
 
     // 支付回调、修改订单状态
     public function updateOrderStatus($result)
     {
         // 判断是否支付成功
-        if ($result['result_code'] == 'SUCCESS' && $result['result_code'] == 'SUCCESS') {
+        if ($result['result_code'] == 'SUCCESS' && $result['return_code'] == 'SUCCESS') {
             // 修改订单状态
             // 订单编号
             $out_trade_no = $result['out_trade_no'];
             // 成交金额
-            $deal_amount = $result['total_fee'];
+            $deal_amount = $result['total_fee']/100;
 
             $data = [
                 'status' => 2,
                 'pay_status' => 1,
-                'deal_amount' => sprintf('%0.2f',$deal_amount),
+                'deal_amount' => $deal_amount,
                 'pay_time' => date("Y-m-d H:i:s",time()),
                 'pay_date' => date('Y-m-d'),
             ];
-            $res = Db::name('order_master')->where(['order_num' => $out_trade_no])->update($data);
-            if ($res) {
-                return "<xml>
+
+            try{
+                $res = Db::name('order_master')->where(['order_num' => $out_trade_no])->update($data);
+
+                if ($res) {
+
+                    return "<xml>
                 <return_code><![CDATA[SUCCESS]]></return_code>
                 <return_msg><![CDATA[OK]]></return_msg>
                 </xml>";
-            }else {
-                return "<xml>
+                }else {
+
+                    return "<xml>
 				<return_code><![CDATA[FAIL]]></return_code>
 				<return_msg><![CDATA[未找到订单号]]></return_msg>
 				</xml>";
+                }
+            }catch (\Exception $e) {
+                Log::error($e->getMessage());
+                return $e->getMessage();
             }
         }
     }
@@ -203,25 +221,43 @@ class WxNotifyBack extends Model
     public function updateCancelOrder($result)
     {
         // 判断是否支付成功
-        if ($result['refund_status'] == 'SUCCESS') {
+        if ($result['return_code'] == 'SUCCESS') {
             // 修改订单状态
             // 订单编号
             $out_trade_no = $result['out_refund_no'];
             // 成交金额
-            $refund_amount = $result['refund_fee'];
+            $refund_amount = $result['refund_fee']/100;
 
             $data = [
-                'status' => 7,
+                'status' => 6,
                 'pay_status' => 3,
-                'refund_amount' => sprintf('%0.2f',$refund_amount),
+                'refund_amount' => $refund_amount,
                 'refund_time' => date("Y-m-d H:i:s",time()),
+                'deleted' => 1,
             ];
-            $res = Db::name('order_master')->where(['order_num' => $out_trade_no])->update($data);
-            if ($res) {
-                return "<xml> 
+
+            try{
+                // 更新订单主表
+                $res = Db::name('order_master')->where(['order_num' => $out_trade_no])->update($data);
+
+                if ($res) {
+
+                    // 更新订单详情表
+                    $res_xq = Db::name('order_details')
+                        ->where(['order_num' => $out_trade_no])
+                        ->update(['deleted' => 1,['update_time' => date("Y-m-d H:i:s",time())]]);
+
+                    if ($res_xq) {
+                        return "<xml> 
                   <return_code><![CDATA[SUCCESS]]></return_code>
                   <return_msg><![CDATA[OK]]></return_msg>
                 </xml>";
+                    }
+                }
+
+            } catch (\Exception $e) {
+                Log::write($e->getMessage());
+                return $e->getMessage();
             }
         }
     }

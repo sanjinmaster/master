@@ -22,6 +22,36 @@ class My extends Model
         return $res;
     }
 
+    // 下级详情
+    public function getNextInfo($user_id)
+    {
+        $where_user = [
+            'user_id' => $user_id
+        ];
+
+        $res = Db::name('user_relation')->field('next_id,create_time')->where($where_user)->select();
+
+        if ($res == null) {
+            return null;
+        }
+
+        $next_id = null;
+        $row = null;
+        foreach ($res as $item) {
+            $next_id[] = $item['next_id'];
+            $row[$item['next_id']]['create_time'] = $item['create_time'];
+        }
+        $next_str_id = join(',',$next_id);
+
+        $res_user = Db::name('user')->field('nickname,headimg')->where('id','in',$next_str_id)->select();
+        foreach ($res_user as $value) {
+            $row[$value['id']]['nickname'] = $value['nickname'];
+            $row[$value['id']]['headimg'] = $value['headimg'];
+        }
+
+        return array_values($row);
+    }
+
     // 分享
     public function shareInfo()
     {
@@ -32,11 +62,15 @@ class My extends Model
     public function getCouponInfo($user_id, $status)
     {
         $res_user_coupon = Db::name('user_coupon')->where(['user_id' => $user_id,'status' => $status])->select();
+        if ($res_user_coupon == null) {
+            return null;
+        }
 
         $coupon_id = null;
         foreach ($res_user_coupon as $item) {
             $coupon_id[] = $item['coupon_id'];
         }
+
         $coupon_id_str = join(',',$coupon_id);
 
         $res_coupon = Db::name('coupon')->where('coupon_id' ,'in', "$coupon_id_str")->where(['deleted' => 0])->select();
@@ -69,20 +103,36 @@ class My extends Model
     // 奖励金详情
     public function getRewardInfo($user_id)
     {
-        $res_user = Db::name('user')->field('total_reward')->where(['user_id' => $user_id])->find();
-        // 可提现奖励金
-        $total_reward = $res_user['total_reward'];
-        // 提现记录
-        $res_reward_take = Db::name('reward_take_out')->field('take_out_amount,take_out_time')->where(['user_id' => $user_id,'deleted' => 0])->select();
         $row = null;
         $rows = null;
-        foreach ($res_reward_take as $item) {
-            $row['take_out_amount'] = $item['take_out_amount'];
-            $row['take_out_time'] = $item['take_out_time'];
-            $rows['reward_take'][] = $row;
+
+        $res_user = Db::name('user')->field('total_reward')->where(['user_id' => $user_id])->find();
+        $res_alipay = Db::name('user_alipay')->field('alipay')->where(['user_id' => $user_id])->find();
+        // 可提现奖励金
+        $total_reward = $res_user['total_reward'];
+        $rows['alipay'] = $res_alipay['alipay'];
+        $rows['total_reward'] = $total_reward;
+
+        // 提现记录
+        $res_reward_take = Db::name('reward_take_out')->field('take_out_amount,take_out_time,status')->where(['user_id' => $user_id,'deleted' => 0])->limit(0,3)->select();
+        if ($res_reward_take == null) {
+            return $rows;
         }
 
-        $rows['total_reward'] = $total_reward;
+        foreach ($res_reward_take as $item) {
+            if ($item['status'] == 3) {
+                $row['take_amount_info'] = "获得奖励金";
+                $row['take_out_amount'] = $item['take_out_amount'];
+                $row['take_out_time'] = $item['take_out_time'];
+            }
+
+            if ($item['status'] == 1) {
+                $row['take_amount_info'] = "提现至支付宝";
+                $row['take_out_amount'] = $item['take_out_amount'];
+                $row['take_out_time'] = $item['take_out_time'];
+            }
+            $rows['reward_take'][] = $row;
+        }
 
         return $rows;
     }
@@ -143,6 +193,11 @@ class My extends Model
             Log::error($e->getMessage());
             return $e->getMessage();
         }
+    }
+
+    public function editAliPay($user_id, $alipay)
+    {
+        return Db::name('user_alipay')->where(['user_id' => $user_id])->update(['alipay' => $alipay,'update_time' => date("Y-M-D h:i:s",time())]);
     }
 
     // 意见反馈

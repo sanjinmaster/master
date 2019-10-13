@@ -37,7 +37,7 @@ class Order extends Base
         $where_before = null;
         $where_search = null;
         if ($order_status != null) { $where_status = [ 'status' => ['=',"$order_status"] ]; }
-        if ($make_time != null) { $where_make = [ 'make_time' => ['=',"$make_time"] ]; }
+        if ($make_time != null) { $where_make = [ 'make_date' => ['=',"$make_time"] ]; }
         if ($before_time != null) { $where_before = [ 'before_time' => ['=',"$before_time"] ]; }
         if ($search_content != null) { $where_search = [ 'mobile' => ['=',"$search_content"] ]; }
 
