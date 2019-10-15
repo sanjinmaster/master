@@ -5,6 +5,7 @@ namespace app\api\controller;
 use app\api\model\Login as LoginModel;
 use think\Controller;
 use app\common\controller\Base as BaseController;
+use think\Db;
 use think\Request;
 
 class Login extends BaseController
@@ -33,19 +34,31 @@ class Login extends BaseController
         switch ($type) {
             case '1' :
                 // 医生登录
-                $res = $RegisterModel->checkDoctorLogin($mobile, $password);
+                $data = $RegisterModel->checkDoctorLogin($mobile, $password);
+
+                if (!$data['id']) {
+                    return $this->errorReturn('1001','账号或密码错误',$data);
+                }
+
+                // 为医生用户生成别名,用于派单
+                $doctor_alias = $this->createAlias();
+                $alias = $RegisterModel->updateAlias(1, $data, $doctor_alias);
                 break;
             case '2' :
                 // 医院登录
-                $res = $RegisterModel->checkHospitalLogin($mobile, $password);
+                $data = $RegisterModel->checkHospitalLogin($mobile, $password);
+
+                if (!$data['id']) {
+                    return $this->errorReturn('1001','账号或密码错误',$data);
+                }
+
+                // 为医院用户生成别名生成别名,用于派单
+                $hospital_alias = $this->createAlias();
+                $alias = $RegisterModel->updateAlias(2, $data, $hospital_alias);
                 break;
             default :
                 return $this->errorReturn('1001','type错误',$type);
                 break;
-        }
-
-        if (!$res) {
-            return $this->errorReturn('1001','账号或密码错误',$res);
         }
 
         $time = strtotime('now');
@@ -54,16 +67,16 @@ class Login extends BaseController
         $token = Login::getToken($mobile, $password, $time);
 
         $time_out = strtotime("+7 days");
-        $id = $res['id'];
 
+        $id = $data['id'];
         // 更新用户token
         $res_token = $RegisterModel::updateToken($token, $time_out, $id, $type);
         if (!$res_token) {
             return $this->errorReturn('1001','token生成失败',$res_token);
         }
 
-        $data['id'] = $id;
         $data['token'] = $token;
+        $data['alias'] = $alias;
 
         return $this->successReturn('200',$data);
     }

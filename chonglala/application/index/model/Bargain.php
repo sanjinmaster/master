@@ -26,6 +26,7 @@ class Bargain extends Model
             'before_time' => $param['before_time'],
             'pay_type' => 2,
             'note' => $param['order_note'],
+            'type' => 1,
         ];
 
         try{
@@ -89,11 +90,13 @@ class Bargain extends Model
                 'create_time' => date("Y-m-d H:i:s",time())
             ];
             // 新增用户砍价记录
-            Db::name('user_bargain')->insertGetId($bar_data);
+            $bargain_id = Db::name('user_bargain')->insertGetId($bar_data);
 
             // 提交事务
             $this->commit();
-            return true;
+            $q['bargain_id'] = $bargain_id;
+            $q['order_num'] = $order_num;
+            return $q;
         }catch (\Exception $e) {
             // 回滚
             $this->rollback();
@@ -118,6 +121,7 @@ class Bargain extends Model
             'before_time' => $param['before_time'],
             'pay_type' => 2,
             'note' => $param['order_note'],
+            'type' => 2,
         ];
 
         try{
@@ -155,11 +159,12 @@ class Bargain extends Model
                 'create_time' => date("Y-m-d H:i:s",time())
             ];
             // 新增用户砍价记录
-            Db::name('user_bargain')->insertGetId($bar_data);
+            $bargain_id = Db::name('user_bargain')->insertGetId($bar_data);
 
             // 提交事务
             $this->commit();
-            return true;
+            $q['bargain_id'] = $bargain_id;
+            $q['order_num'] = $order_num;
         }catch (\Exception $e) {
             // 回滚
             $this->rollback();
@@ -170,26 +175,57 @@ class Bargain extends Model
     }
 
     // 获取砍价页面所需信息
-    public function getBargainInfo($user_id, $gid, $order_num)
+    public function getBargainInfo($user_id, $bargain_id)
     {
         $row = null;
         // 根据user_id获取头像、昵称
         $res_user = Db::name('user')->field('headimg,nickname')->where(['user_id' => $user_id])->find();
+
+        if ($res_user == null) {
+            return null;
+        }
+
         // 头像
         $row['headimg'] = $res_user['headimg'];
         // 昵称
         $row['nickname'] = $res_user['nickname'];
 
         // 根据order_num获取商品订单信息
-        $res_order = Db::name('user_bargain')->field('id,before_price,present_price,already_price,highest_price')->where(['order_num' => $order_num])->find();
+        $res_order = Db::name('user_bargain')->field('id,order_num,before_price,present_price,already_price,highest_price')->where(['id' => $bargain_id])->find();
+
+        if ($res_order == null) {
+            return null;
+        }
+
+        // 砍价榜
+        $bargain_details = Db::name('bargain_details')
+            ->field('a.user_id,a.bargain_amount,b.nickname,b.headimg')
+            ->alias('a')
+            ->join('user b','a.user_id = b.user_id')
+            ->where('a.bargain_id',$res_order['id'])
+            ->select();
+
+        if ($res_order == null) {
+            return null;
+        }
+
+        foreach ($bargain_details as $detail) {
+            $rows['headimg'] = $detail['headimg'];
+            $rows['nickname'] = $detail['nickname'];
+            $rows['bargain_amount'] = $detail['bargain_amount'];
+
+            $row['bargain_bang'][] = $rows;
+        }
+
         // 原价
         $row['before_price'] = sprintf('%0.2f',$res_order['before_price']);
         // 砍价过后金额，此时还没有砍价
         $row['present_price'] = sprintf('%0.2f',$res_order['present_price']);
         // 最高可砍
-        $row['highest_price'] = sprintf('%0.2f',$res_order['highest_price'] * 0.2);
+        $row['highest_price'] = sprintf('%0.2f',$res_order['highest_price']);
         // 已砍金额,此时还没有产生砍价
         $row['already_price'] = sprintf('%0.2f',$res_order['already_price']);
+        $row['order_num'] = $res_order['order_num'];
         $row['id'] = $res_order['id'];
 
         return $row;
@@ -235,7 +271,7 @@ class Bargain extends Model
                     // 现价
                     $present_price = sprintf('%0.2f',$before_price - $already_price);
                     $data_price = [
-                        'already_price' => sprintf('%0.2f',$already_price),
+                        'already_price' => $already_price,
                         'present_price' => sprintf('%0.2f',$present_price)
                     ];
 
@@ -263,7 +299,7 @@ class Bargain extends Model
                     }
                 }
             }else {
-                return false;
+                return 'fail';
             }
         }
     }
@@ -278,45 +314,45 @@ class Bargain extends Model
             // 本次条件下最多发生金额
             $total_once_amount = sprintf('%0.2f',($highest_price * 0.2));
             $amount = $this->bargainBl($res_user_count,$total_once_amount);
-            return sprintf('%0.2f',$amount);
+            return $amount;
         }
 
         if ($res_user_count == 7) {
             // 本次条件下最多发生金额
             $total_once_amount = sprintf('%0.2f',($highest_price * 0.2));
-            return sprintf('%0.2f',$total_once_amount);
+            return $total_once_amount;
         }
 
         if ($res_user_count >= 8 && $res_user_count <= 26) {
             // 本次条件下最多发生金额
             $total_once_amount = sprintf('%0.2f',($highest_price * 0.2));
             $amount = $this->bargainBl($res_user_count,$total_once_amount);
-            return sprintf('%0.2f',$amount);
+            return $amount;
         }
 
         if ($res_user_count == 27) {
             // 本次条件下最多发生金额
             $total_once_amount = sprintf('%0.2f',($highest_price * 0.4));
-            return sprintf('%0.2f',$total_once_amount);
+            return $total_once_amount;
         }
         if ($res_user_count >= 28 && $res_user_count < 56) {
             // 本次条件下最多发生金额
             $total_once_amount = sprintf('%0.2f',($highest_price * 0.2));
             $amount = $this->bargainBl($res_user_count,$total_once_amount);
-            return sprintf('%0.2f',$amount);
+            return $amount;
         }
 
         if ($res_user_count == 57) {
             // 本次条件下最多发生金额
             $total_once_amount = sprintf('%0.2f',($highest_price * 0.3));
-            return sprintf('%0.2f',$total_once_amount);
+            return $total_once_amount;
         }
 
         if ($res_user_count >= 58 && $res_user_count <= 87) {
             // 本次条件下最多发生金额
             $total_once_amount = sprintf('%0.2f',($highest_price * 0.5));
             $amount = $this->bargainBl($res_user_count,$total_once_amount);
-            return sprintf('%0.2f',$amount);
+            return $amount;
         }
     }
 
@@ -325,84 +361,84 @@ class Bargain extends Model
     {
         // 前7个好友随机分2%
         if ($res_user_count == 0) {
-            return sprintf('%0.2f',$total_once_amount * 0.2);
+            return $total_once_amount * 0.2;
         }
         if ($res_user_count == 1) {
-            return sprintf('%0.2f',$total_once_amount * 0.01);
+            return $total_once_amount * 0.01;
         }
         if ($res_user_count == 2) {
-            return sprintf('%0.2f',$total_once_amount * 0.4);
+            return $total_once_amount * 0.4;
         }
         if ($res_user_count == 3) {
-            return sprintf('%0.2f',$total_once_amount * 0.07);
+            return $total_once_amount * 0.07;
         }
         if ($res_user_count == 4) {
-            return sprintf('%0.2f',$total_once_amount * 0.04);
+            return $total_once_amount * 0.04;
         }
         if ($res_user_count == 5) {
-            return sprintf('%0.2f',$total_once_amount * 0.09);
+            return $total_once_amount * 0.09;
         }
         if ($res_user_count == 6) {
-            return sprintf('%0.2f',$total_once_amount * 0.19);
+            return $total_once_amount * 0.19;
         }
 
         // 9刀-27刀随机分2%
         if ($res_user_count == 8) {
-            return sprintf('%0.2f',$total_once_amount * 0.03);
+            return $total_once_amount * 0.03;
         }
         if ($res_user_count == 9) {
-            return sprintf('%0.2f',$total_once_amount * 0.006);
+            return $total_once_amount * 0.006;
         }
         if ($res_user_count == 10) {
-            return sprintf('%0.2f',$total_once_amount * 0.007);
+            return $total_once_amount * 0.007;
         }
         if ($res_user_count == 11) {
-            return sprintf('%0.2f',$total_once_amount * 0.002);
+            return $total_once_amount * 0.002;
         }
         if ($res_user_count == 12) {
-            return sprintf('%0.2f',$total_once_amount * 0.007);
+            return $total_once_amount * 0.007;
         }
         if ($res_user_count == 13) {
-            return sprintf('%0.2f',$total_once_amount * 0.009);
+            return $total_once_amount * 0.009;
         }
         if ($res_user_count == 14) {
-            return sprintf('%0.2f',$total_once_amount * 0.001);
+            return $total_once_amount * 0.001;
         }
         if ($res_user_count == 15) {
-            return sprintf('%0.2f',$total_once_amount * 0.003);
+            return $total_once_amount * 0.003;
         }
         if ($res_user_count == 16) {
-            return sprintf('%0.2f',$total_once_amount * 0.007);
+            return $total_once_amount * 0.007;
         }
         if ($res_user_count == 17) {
-            return sprintf('%0.2f',$total_once_amount * 0.01);
+            return $total_once_amount * 0.01;
         }
         if ($res_user_count == 18) {
-            return sprintf('%0.2f',$total_once_amount * 0.004);
+            return $total_once_amount * 0.004;
         }
         if ($res_user_count == 19) {
-            return sprintf('%0.2f',$total_once_amount * 0.02);
+            return $total_once_amount * 0.02;
         }
         if ($res_user_count == 20) {
-            return sprintf('%0.2f',$total_once_amount * 0.03);
+            return $total_once_amount * 0.03;
         }
         if ($res_user_count == 21) {
-            return sprintf('%0.2f',$total_once_amount * 0.01);
+            return $total_once_amount * 0.01;
         }
         if ($res_user_count == 22) {
-            return sprintf('%0.2f',$total_once_amount * 0.1);
+            return $total_once_amount * 0.1;
         }
         if ($res_user_count == 23) {
-            return sprintf('%0.2f',$total_once_amount * 0.06);
+            return $total_once_amount * 0.06;
         }
         if ($res_user_count == 24) {
-            return sprintf('%0.2f',$total_once_amount * 0.05);
+            return $total_once_amount * 0.05;
         }
         if ($res_user_count == 25) {
-            return sprintf('%0.2f',$total_once_amount * 0.5);
+            return $total_once_amount * 0.5;
         }
         if ($res_user_count == 26) {
-            return sprintf('%0.2f',$total_once_amount * 0.144);
+            return $total_once_amount * 0.144;
         }
 
         // 28刀-57刀随机分2%
@@ -595,5 +631,12 @@ class Bargain extends Model
         if ($res_user_count == 87) {
             return sprintf('%0.2f',$total_once_amount * 0.003);
         }
+    }
+
+    // 校验用户是否二次砍价
+    public function checkBar($user_id, $order_num)
+    {
+        $res = Db::name('user_bargain')->where(['user_id' => $user_id,'order_num' => $order_num])->count();
+        return $res;
     }
 }

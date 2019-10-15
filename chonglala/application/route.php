@@ -175,14 +175,14 @@ Route::any('pet/home/notifyBack','index/WxNotifyBack/notifyBack');
 
 // 首页-业务分类(上门疫苗、上门体检、上门美容、上门火化)-商品列表-去结算,去砍价
 Route::post('pet/home/bargain','index/Bargain/bargain');
+// 砍价校验用户是否二次砍价
+Route::get('pet/home/checkBargain','index/Bargain/checkBargain');
 // 首页-业务分类(上门疫苗、上门体检、上门美容、上门火化)-商品列表-砍价活动,查看详情
 Route::get('pet/home/orderDetails','index/banner/banner');
 // 首页-业务分类(上门疫苗、上门体检、上门美容、上门火化)-商品列表-砍价活动,活动规则
 Route::get('pet/home/about','');
 // 首页-业务分类(上门疫苗、上门体检、上门美容、上门火化)-商品列表-砍价活动,让朋友也来砍一刀
 Route::post('pet/home/share','index/Bargain/makeAmount');
-// 首页-业务分类(上门疫苗、上门体检、上门美容、上门火化)-商品列表-砍价活动,现在就要去付款
-Route::put('pet/home/now','index/banner/banner');
 // 首页-业务分类(上门疫苗、上门体检、上门美容、上门火化)-商品列表-砍价活动,取消此订单
 Route::delete('pet/home/cancelOrder','index/banner/banner');
 
@@ -243,6 +243,8 @@ Route::any('pet/my/cancelBack','index/WxNotifyBack/cancelBack');
 Route::post('pet/my/evaluateNote','index/Order/evaluateNote');
 // 我的-我的服务-意见反馈
 Route::post('pet/my/feedback','index/My/ideaBack');
+// 我的-待付款查看砍价
+Route::get('pet/my/lookDfk','index/Order/lookDfk');
 
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -269,8 +271,10 @@ Route::delete('app/logout','api/Login/logout');
 // 忘记密码-医院、医生
 Route::put('app/forgetPwd','api/Register/forgetPwd');
 
-// 接单-认证过的医生-列表(待接单、待服务、待确认、已完成)
-Route::get('app/order/orderList','index/banner/banner');
+// 接单-认证过的医生-待接单列表
+Route::get('app/order/orderListDjd','api/Order/orderListDjd');
+// 待接单状态下认证过的医生或者医院抢单
+Route::put('app/order/receiptOrder','api/MeetOrder/receiptOrder');
 // 接单-认证过的医生-待接单-接单、弃单
 Route::post('app/order/agreeOrder','index/banner/banner');
 // 接单-认证过的医生-列表订单详情(待接单、待服务、待确认、已完成)

@@ -52,7 +52,7 @@ class Register extends BaseController
         $code = $templateParam['rand'];
         // 存redis
         Cache::store('redis')->set("$PhoneNumbers","$code",60);
-        //$res_send['verify_code'] = $code;
+        $res_send['verify_code'] = $code;
 
         return $this->successReturn('200',$res_send);
     }
@@ -94,7 +94,7 @@ class Register extends BaseController
         $checkPwd = Register::checkPwd($password);
 
         if (!$checkPwd) {
-            return $this->errorReturn('1001','密码必须含有小写字母、大写字母、数字、特殊符号的两种及以上',$checkPwd);
+            return $this->errorReturn('1001','密码必须含有小写字母、大写字母、数字、特殊符号的两种及以上,位数在8到16位',$checkPwd);
         }
 
         switch ($type) {

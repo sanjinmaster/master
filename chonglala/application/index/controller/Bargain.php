@@ -20,7 +20,6 @@ class Bargain extends Base
             ['user_id', ['require','number'],''],
             ['mobile', ['require','number'],''],
             ['address', ['require'],''],
-            ['order_note', ['require'],''],
             ['total_amount', ['require','number'],''],
             ['gid', ['require'],''],
             ['type', ['require','number'],''],
@@ -34,7 +33,6 @@ class Bargain extends Base
 
         // 用户id
         $user_id = $param['user_id'];
-        $gid = $param['gid'];
 
         // 生成待支付订单
         $res = $this->makeOrder($order_num, $param);
@@ -45,16 +43,43 @@ class Bargain extends Base
 
         $BargainModel = new BargainModel();
         // 生成待支付订单成功后返回砍价页面所需信息
-        $row = $BargainModel->getBargainInfo($user_id, $gid, $order_num);
+        $row = $BargainModel->getBargainInfo($user_id, $res['bargain_id']);
 
         if (!$row) {
             $this->errorReturn('1002','没有找到数据',$row);
         }
 
         $data['data'] = $row;
-        $data['order_num'] = $order_num;
+        $data['order_num'] = $res['order_num'];
 
         return $this->successReturn('200',$data);
+    }
+
+    // 校验用户是否二次参与砍价
+    public function checkBargain()
+    {
+        // 获取参数
+        $param = $this->takePostParam();
+
+        // 检验参数
+        $validate = new \think\Validate([
+            ['user_id', ['require'],'number'],
+            ['order_num', ['require','number'],'']
+        ]);
+        if (!$validate->check($param)) {
+            return $this->errorReturn('1001','请求参数不符合要求',$param);
+        }
+
+        $user_id = $param['user_id'];
+        $order_num = $param['order_num'];
+
+        $BargainModel = new BargainModel();
+        $res = $BargainModel->checkBar($user_id, $order_num);
+        if ($res) {
+            return $this->errorReturn('1002','您已经砍过了',$res);
+        }
+
+        return $this->successReturn('200',$res);
     }
 
     // 生成待支付订单
@@ -108,7 +133,8 @@ class Bargain extends Base
         $highest_price = $param['highest_price'];
         $BargainModel = new BargainModel();
         $res = $BargainModel->makeBar($openid, $order_num, $user_bargain_id, $before_price, $highest_price);
-        if (!$res) {
+
+        if ($res == 'fail') {
             return $this->errorReturn('1002','您已经砍过了',$res);
         }
 

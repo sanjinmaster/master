@@ -120,6 +120,7 @@ class Pay extends Base
         $validate = new \think\Validate([
             ['openid', ['require'],''],
             ['order_num', ['require'],''],
+            ['before_time', ['require'],''],
         ]);
         if (!$validate->check($param)) {
             return $this->errorReturn('1001','请求参数不符合要求',$param);
@@ -128,6 +129,14 @@ class Pay extends Base
         $openid = $param['openid'];
         // 生成唯一订单号
         $order_num = $param['order_num'];
+        // 预约时间
+        $before_time = $param['before_time'];
+        // 更新待支付订单的预约时间
+        $Pay = new \app\index\model\Pay();
+        $res = $Pay->updateOrder($order_num, $before_time);
+        if (!$res) {
+            return $this->errorReturn('1001','预约时间更新失败',$res);
+        }
 
         $config = [
             'token'          => 'd90dac55927f755bcd6cc81aaf96b970',

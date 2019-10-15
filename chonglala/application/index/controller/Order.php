@@ -4,6 +4,7 @@ namespace app\index\controller;
 
 use app\common\controller\Base;
 use app\index\model\Order as OrderModel;
+use app\index\model\Bargain as BargainModel;
 use think\Controller;
 use think\Request;
 
@@ -51,6 +52,28 @@ class Order extends Base
         if (!$res){
             return $this->successReturn('6001',$res);
         }
+
+        return $this->successReturn('200',$res);
+    }
+
+    // 待付款-查看砍价
+    public function lookDfk()
+    {
+        $param = $this->takeGetParam();
+
+        $validate = new \think\Validate([
+            ['user_id', ['require','number'],''],
+            ['bargain_id', ['require','number'],''],
+        ]);
+        if (!$validate->check($param)) {
+            return $this->errorReturn('1001','请求参数不符合要求',$param);
+        }
+
+        $user_id = $param['user_id'];
+        $bargain_id = $param['bargain_id'];
+
+        $BargainModel = new BargainModel();
+        $res = $BargainModel->getBargainInfo($user_id, $bargain_id);
 
         return $this->successReturn('200',$res);
     }
@@ -221,7 +244,7 @@ class Order extends Base
         $res = $OrderModel->getDoctorPj($doctor_id);
 
         if (!$res){
-            return $this->successReturn('6001','还没有评价信息...');
+            return $this->successReturn('6001',$res);
         }
 
         return $this->successReturn('200',$res);

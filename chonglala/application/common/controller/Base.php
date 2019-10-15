@@ -42,16 +42,37 @@ define('PUBLIC_APP_KEY','-----BEGIN PUBLIC KEY----- MIGfMA0GCSqGSIb3DQEBAQUAA4GN
 
 class Base extends Controller
 {
-    //阿里云OSS
+    // 阿里云OSS
     public $accessKeyId = "LTAI2t2tI0OSHAdV";
     public $accessKeySecret = "JsOOIJzQSAquMLX1mBQZ9OIs8mSeGl";
     public $endpoint = "http://oss-cn-hangzhou.aliyuncs.com";
     public $bucket = "exam-181212";
 
-    //百度地图api
+    // 极光推送
+    public $jg_app_key = '205fb49ba887fdf43512ca57';
+    public $jg_master_secret = 'b3967d944c43c5bcc80973a0';
+
+    // 百度地图api
     public $ak = 'LlAFZ1WtwIYOwCxAcVp96luiWoH651yn';  //改版后，服务端和客户端key值不能共用
 
-    //用rsa加密
+    // 引入极光推送sdk
+    protected function jgSdk_inc()
+    {
+        require_once  EXTEND_PATH.'/jpush-api-php-client-master/src/JPush/Client.php';
+        require_once  EXTEND_PATH.'/jpush-api-php-client-master/src/JPush/Config.php';
+        require_once  EXTEND_PATH.'/jpush-api-php-client-master/src/JPush/PushPayload.php';
+        require_once  EXTEND_PATH.'/jpush-api-php-client-master/src/JPush/Http.php';
+    }
+
+    // 为医生用户生成别名
+    protected function createAlias()
+    {
+        $charid = strtoupper(md5(uniqid(mt_rand(), true)));
+        $uuid = substr($charid, 0, 8).substr($charid, 8, 4).substr($charid,12, 4).substr($charid,16, 4).substr($charid,20,12);
+        return $uuid;
+    }
+
+    // 用rsa加密
     public static function rsa_encode($data)
     {
         //$pi_key =  openssl_pkey_get_private(PRIVATE_KEY);
@@ -65,7 +86,7 @@ class Base extends Controller
         return $encrypted;
     }
 
-    //用rsa解密
+    // 用rsa解密
     public static function rsa_decode($encrypted)
     {
         $pi_key =  openssl_pkey_get_private(PRIVATE_KEY);

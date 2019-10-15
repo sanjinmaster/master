@@ -40,13 +40,14 @@ class Order extends Model
 
             // 帮砍表
             $res_bargain = Db::name('user_bargain')
-                ->field('present_price,already_price,highest_price')
+                ->field('id,present_price,already_price,highest_price')
                 ->where(['order_num' => "$order_num"])
                 ->find();
 
             // 如果一张订单有砍价记录
             if ($res_bargain != null) {
                 $rows[$value['order_id']]['present_price'] = $res_bargain['present_price'];
+                $rows[$value['order_id']]['bargain_id'] = $res_bargain['id'];
                 if ($res_bargain['already_price'] < $res_bargain['highest_price']) {
                     $rows[$value['order_id']]['bargain_type'] = '砍价进行中...';
                 }
@@ -178,7 +179,14 @@ class Order extends Model
         'deleted' => '0',
     ];
 
-        $res_master = $this->field('order_id,doctor_id,hospital_id,order_num,pay_status,before_time,pay_status,pay_type,deal_amount')->where($where_master)->select();
+        $res_master = $this->field('order_id,doctor_id,hospital_id,order_num,
+        pay_status,before_time,pay_status,pay_type,deal_amount')
+            ->where($where_master)
+            ->select();
+
+        if ($res_master == null) {
+            return null;
+        }
 
         $order_id = null;
         $row = null;
@@ -198,7 +206,16 @@ class Order extends Model
         }
         $order_id_str = join(',',$order_id);
 
-        $res_details = Db::name('order_details')->field('order_id,gid,goods_name,price,num')->where('order_id','in',"$order_id_str")->where(['deleted' => 0])->select();
+        $res_details = Db::name('order_details')
+            ->field('order_id,gid,goods_name,price,num')
+            ->where('order_id','in',"$order_id_str")
+            ->where(['deleted' => 0])
+            ->select();
+
+        if ($res_details == null) {
+            return null;
+        }
+
         foreach ($res_details as $detail) {
             $gid = $detail['gid'];
             $row['goods_name'] = $detail['goods_name'];
@@ -226,6 +243,10 @@ class Order extends Model
 
         $res_master = $this->field('order_id,doctor_id,hospital_id,order_num,pay_status,before_time,pay_status,pay_type,deal_amount')->where($where_master)->select();
 
+        if ($res_master == null) {
+            return null;
+        }
+
         $order_id = null;
         $row = null;
         $rows = null;
@@ -245,6 +266,11 @@ class Order extends Model
         $order_id_str = join(',',$order_id);
 
         $res_details = Db::name('order_details')->field('order_id,gid,goods_name,price,num')->where('order_id','in',"$order_id_str")->where(['deleted' => 0])->select();
+
+        if ($res_details == null) {
+            return null;
+        }
+
         foreach ($res_details as $detail) {
             $gid = $detail['gid'];
             $row['goods_name'] = $detail['goods_name'];
@@ -272,6 +298,10 @@ class Order extends Model
 
         $res_master = $this->field('order_id,doctor_id,hospital_id,order_num,pay_status,before_time,pay_status,pay_type,deal_amount')->where($where_master)->select();
 
+        if ($res_master == null) {
+            return null;
+        }
+
         $order_id = null;
         $row = null;
         $rows = null;
@@ -291,6 +321,11 @@ class Order extends Model
         $order_id_str = join(',',$order_id);
 
         $res_details = Db::name('order_details')->field('order_id,gid,goods_name,price,num')->where('order_id','in',"$order_id_str")->where(['deleted' => 0])->select();
+
+        if ($res_details == null) {
+            return null;
+        }
+
         foreach ($res_details as $detail) {
             $gid = $detail['gid'];
             $row['goods_name'] = $detail['goods_name'];
@@ -350,22 +385,54 @@ class Order extends Model
             $rows[$master['order_id']]['address_name'] = $res_user['name'].' '.$master['mobile'];
             $rows[$master['order_id']]['before_time'] = $master['before_time'];
             $rows[$master['order_id']]['make_time'] = $master['make_time'];
+
             if ($status == 1) {
-                $rows[$master['order_id']]['total_amount'] = $master['total_amount'];
+
+                if ($master['pay_type'] == 2){
+
+                    // 砍价
+                    $res_bargain = Db::name('user_bargain')
+                        ->field('present_price')
+                        ->where(['order_num' => $master['order_num']])
+                        ->find();
+
+                    $rows[$master['order_id']]['total_amount'] = $res_bargain['present_price'];
+                    $rows[$master['order_id']]['pay_type'] = '砍价支付';
+                }
+                if ($master['pay_type'] == 1) {
+                    $rows[$master['order_id']]['total_amount'] = $master['total_amount'];
+                    $rows[$master['order_id']]['pay_type'] = '直接支付';
+                }
+
             }
 
             if ($status == 2) {
                 $rows[$master['order_id']]['total_amount'] = $master['deal_amount'];
+                if ($master['pay_type'] == 2){
+
+                    // 砍价
+                    $res_bargain = Db::name('user_bargain')
+                        ->field('present_price')
+                        ->where(['order_num' => $master['order_num']])
+                        ->find();
+
+                    $rows[$master['order_id']]['total_amount'] = $res_bargain['present_price'];
+                    $rows[$master['order_id']]['pay_type'] = '砍价支付';
+                }
+                if ($master['pay_type'] == 1) {
+                    $rows[$master['order_id']]['total_amount'] = $master['total_amount'];
+                    $rows[$master['order_id']]['pay_type'] = '直接支付';
+                }
             }
             $rows[$master['order_id']]['note'] = $master['note'];
             $rows[$master['order_id']]['type'] = $master['type'];
 
-            if ($master['pay_type'] == 1) {
+            /*if ($master['pay_type'] == 1) {
                 $rows[$master['order_id']]['pay_type'] = '直接支付';
             }
             if ($master['pay_type'] == 2) {
                 $rows[$master['order_id']]['pay_type'] = '砍价支付';
-            }
+            }*/
         }
         $order_id_str = join(',',$order_id);
 
@@ -397,7 +464,8 @@ class Order extends Model
         ];
 
         $res_master = $this->field('user_id,order_id,order_num,address,mobile,before_time,make_time,deal_amount,pay_type,note')
-            ->where($where_details)->select();
+            ->where($where_details)
+            ->select();
 
         $row = null;
         $rows = null;
@@ -408,8 +476,9 @@ class Order extends Model
             $res_user = Db::name('address')->field('name')->where(['user_id' => $user_id,'default' => 1,'deleted' => 0])->find();
 
             $where_doctor = ['order_num' => $master['order_num'],'status' => 2,'is_accept' => 1];
-            $res_doctor = Db::name('app_doctor_order')->field('door_doctor')->where($where_doctor)->find();
+            $res_doctor = Db::name('app_doctor_order')->field('doctor_id,door_doctor')->where($where_doctor)->find();
 
+            $rows[$master['order_id']]['doctor_id'] = $res_doctor['doctor_id'];
             $rows[$master['order_id']]['door_doctor'] = $res_doctor['door_doctor'];
             $rows[$master['order_id']]['order_id'] = $master['order_id'];
             $rows[$master['order_id']]['order_num'] = $master['order_num'];
@@ -417,7 +486,7 @@ class Order extends Model
             $rows[$master['order_id']]['address_name'] = $res_user['name'].' '.$master['mobile'];
             $rows[$master['order_id']]['before_time'] = $master['before_time'];
             $rows[$master['order_id']]['make_time'] = $master['make_time'];
-            $rows[$master['order_id']]['deal_amount'] = $master['deal_amount'];
+            $rows[$master['order_id']]['total_amount'] = $master['deal_amount'];
             $rows[$master['order_id']]['note'] = $master['note'];
 
             if ($master['pay_type'] == 1) {
@@ -578,7 +647,7 @@ class Order extends Model
         // 取出所有评价
         $res_evaluate = Db::name('user_order_evaluate')->field('user_id,order_num,evaluate_note,evaluate_time,images,back_note')->where(['doctor_id' => $doctor_id])->select();
         if ($res_evaluate == null) {
-            return false;
+            return null;
         }
 
         $count_evaluate = count($res_evaluate);

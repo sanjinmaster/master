@@ -45,9 +45,6 @@ class WxNotifyBack extends Base
     // 支付成功回调、修改订单状态
     public function notifyBack()
     {
-        $param = $this->takePutParam();
-        CreditScore::getCreditScore($param);
-        die;
         // 获取参数
         $xmlData = file_get_contents('php://input');
         libxml_disable_entity_loader(true);
@@ -60,13 +57,11 @@ class WxNotifyBack extends Base
         $WxNotifyBackModel = new WxNotifyBackModel();
         $res = $WxNotifyBackModel->updateOrderStatus($result);
 
-        /*if ($res) {
-            // 支付成功后根据医院和医生的信用分、距离进行随机派单
-
-            // 获取信用分
-            $credit_score = CreditScore::getCreditScore($result);
-
-        }*/
+        if ($res) {
+            $param = $this->takePutParam();
+            $CreditScore = new CreditScore();
+            $CreditScore->pushApp($param);
+        }
 
         return $this->successReturn('200',$res);
     }
