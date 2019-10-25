@@ -25,7 +25,7 @@ class Code extends Base
         ];
         $msg = "状态码不存在";
         foreach ($code_arr as $key => $value){
-            if ($code==$key){
+            if ($code == $key){
                 $msg = $value;
             }
         }
@@ -55,7 +55,7 @@ class Code extends Base
         ];
         $msg = "状态码不存在";
         foreach ($code_arr as $key => $value){
-            if ($code==$key){
+            if ($code == $key){
                 $msg = $value;
             }
         }

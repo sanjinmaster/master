@@ -37,7 +37,7 @@ class Login extends BaseController
                 $data = $RegisterModel->checkDoctorLogin($mobile, $password);
 
                 if (!$data['id']) {
-                    return $this->errorReturn('1001','账号或密码错误',$data);
+                    return $this->errorReturn('1001','账号或密码错误',$param);
                 }
 
                 // 为医生用户生成别名,用于派单
@@ -49,7 +49,7 @@ class Login extends BaseController
                 $data = $RegisterModel->checkHospitalLogin($mobile, $password);
 
                 if (!$data['id']) {
-                    return $this->errorReturn('1001','账号或密码错误',$data);
+                    return $this->errorReturn('1001','账号或密码错误',$param);
                 }
 
                 // 为医院用户生成别名生成别名,用于派单

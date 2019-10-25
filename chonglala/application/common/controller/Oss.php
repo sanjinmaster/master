@@ -112,13 +112,20 @@ class Oss extends Base
         $url = "http://".$this->bucket.".oss-cn-hangzhou.aliyuncs.com/".$object;
         return $url;
     }
+
     //图片上传-base64
     public function imageUploadByBase64($base64_code)
     {
-        $dir_path = realpath("./");
+        /*$dir_path = realpath("./");
         if (!is_dir($dir_path)) {
             mkdir($dir_path, 0777);
+        }*/
+
+        $dir_path = realpath(ROOT_PATH . 'public' . DS . 'uploads');
+        if (!is_dir($dir_path)) {
+            mkdir(ROOT_PATH . 'public' . DS . 'uploads', 0777);
         }
+
         if (preg_match('/^(data:\s*image\/(\w+);base64,)/', $base64_code, $result)) {
             if (!empty($result[2])) {
                 $type = $result[2];

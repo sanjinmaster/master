@@ -30,8 +30,10 @@ class Settlement extends Base
 
         $count = count($cid);
         if ($count >= 2) {
+
             // 校验结算商品是否是同一分类
             $check = $this->checkMakePublic($cid);
+
             if ($check == false) {
                 return $this->errorReturn('1001','选择的结算商品不能包含不同分类',$gid);
             }

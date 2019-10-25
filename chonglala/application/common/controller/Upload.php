@@ -64,4 +64,21 @@ class Upload extends Base
         $data = $oss->fileUpload();
         return $this->successReturn('200',$data);
     }
+
+    // base64图片上传
+    public function uploadBase64()
+    {
+        // 校验文件合法性
+        $param = $this->takePostParam();
+
+        $base64_code = $param['file'];
+
+        if(!$base64_code){
+            exit('附件有错误');
+        }
+
+        $oss = new Oss();
+        $data = $oss->imageUploadByBase64($base64_code);
+        return $this->successReturn('200',$data);
+    }
 }

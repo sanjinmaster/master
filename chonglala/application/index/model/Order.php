@@ -179,7 +179,7 @@ class Order extends Model
         'deleted' => '0',
     ];
 
-        $res_master = $this->field('order_id,doctor_id,hospital_id,order_num,
+        $res_master = $this->field('order_id,order_num,
         pay_status,before_time,pay_status,pay_type,deal_amount')
             ->where($where_master)
             ->select();
@@ -198,8 +198,6 @@ class Order extends Model
             $rows[$value['order_id']]['total_amount'] = sprintf('%0.2f',$value['deal_amount']);
 
             $rows[$value['order_id']]['order_id'] = $value['order_id'];
-            $rows[$value['order_id']]['doctor_id'] = $value['doctor_id'];
-            $rows[$value['order_id']]['hospital_id'] = $value['hospital_id'];
             $rows[$value['order_id']]['order_num'] = $value['order_num'];
             $rows[$value['order_id']]['pay_status'] = $value['pay_status'];
             $rows[$value['order_id']]['before_time'] = $value['before_time'];
@@ -241,7 +239,8 @@ class Order extends Model
             'deleted' => '0',
         ];
 
-        $res_master = $this->field('order_id,doctor_id,hospital_id,order_num,pay_status,before_time,pay_status,pay_type,deal_amount')->where($where_master)->select();
+        $res_master = $this->field('order_id,
+        order_num,pay_status,before_time,pay_status,pay_type,deal_amount')->where($where_master)->select();
 
         if ($res_master == null) {
             return null;
@@ -257,8 +256,6 @@ class Order extends Model
             $rows[$value['order_id']]['total_amount'] = sprintf('%0.2f',$value['deal_amount']);
 
             $rows[$value['order_id']]['order_id'] = $value['order_id'];
-            $rows[$value['order_id']]['doctor_id'] = $value['doctor_id'];
-            $rows[$value['order_id']]['hospital_id'] = $value['hospital_id'];
             $rows[$value['order_id']]['order_num'] = $value['order_num'];
             $rows[$value['order_id']]['pay_status'] = $value['pay_status'];
             $rows[$value['order_id']]['before_time'] = $value['before_time'];
@@ -296,7 +293,10 @@ class Order extends Model
             'deleted' => '0',
         ];
 
-        $res_master = $this->field('order_id,doctor_id,hospital_id,order_num,pay_status,before_time,pay_status,pay_type,deal_amount')->where($where_master)->select();
+        $res_master = $this->field('order_id,
+        order_num,pay_status,before_time,pay_status,pay_type,deal_amount')
+            ->where($where_master)
+            ->select();
 
         if ($res_master == null) {
             return null;
@@ -309,11 +309,15 @@ class Order extends Model
         foreach ($res_master as $value) {
             $order_id[] = $value['order_id'];
 
+            $doctor_order = \db('app_doctor_order')
+                ->field('doctor_id')
+                ->where('order_num',$value['order_num'])
+                ->find();
+
             $rows[$value['order_id']]['total_amount'] = sprintf('%0.2f',$value['deal_amount']);
 
+            $rows[$value['order_id']]['doctor_id'] = $doctor_order['doctor_id'];
             $rows[$value['order_id']]['order_id'] = $value['order_id'];
-            $rows[$value['order_id']]['doctor_id'] = $value['doctor_id'];
-            $rows[$value['order_id']]['hospital_id'] = $value['hospital_id'];
             $rows[$value['order_id']]['order_num'] = $value['order_num'];
             $rows[$value['order_id']]['pay_status'] = $value['pay_status'];
             $rows[$value['order_id']]['before_time'] = $value['before_time'];

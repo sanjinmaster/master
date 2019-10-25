@@ -2,6 +2,7 @@
 
 namespace app\index\model;
 
+use think\Cache;
 use think\Db;
 use think\Exception;
 use think\Log;
@@ -40,7 +41,11 @@ class WxNotifyBack extends Model
             $gid_str = trim($param['gid']);
 
             // 拿出购物车中商品数量
-            $shop_cart = Db::name('shop_cart')->field('gid,num')->where(['user_id' => $param['user_id']])->where('gid','in',"$gid_str")->select();
+            $shop_cart = Db::name('shop_cart')
+                ->field('gid,num')
+                ->where(['user_id' => $param['user_id']])
+                ->where('gid','in',"$gid_str")
+                ->select();
 
             $row = null;
             $rows = null;
@@ -50,7 +55,11 @@ class WxNotifyBack extends Model
             }
 
             // 取出商品信息
-            $goods_info = Db::name('goods_info')->field('id,goods_name,price')->where('id','in',"$gid_str")->select();
+            $goods_info = Db::name('goods_info')
+                ->field('id,goods_name,price')
+                ->where('id','in',"$gid_str")
+                ->select();
+
             foreach ($goods_info as $item) {
                 // 放入商品信息
                 $row[$item['id']]['goods_name'] = $item['goods_name'];
@@ -195,7 +204,42 @@ class WxNotifyBack extends Model
             ];
 
             try{
+                // 更新订单主表状态
                 $res = Db::name('order_master')->where(['order_num' => $out_trade_no])->update($data);
+
+                // 如果支付用户有上级,则给上级更新奖励金
+                $next_id = Cache::get("$out_trade_no");
+                $res_id = Db::name('user_relation')->field('user_id')->where('next_id',$next_id)->find();
+                $up_id = $res_id['user_id'];
+
+                // 产生奖励金逻辑
+                if ($up_id) {
+
+                    // 新增奖励金记录
+                    $data_reward = [
+                        'user_id' => $next_id,
+                        'order_num' => $out_trade_no,
+                        'reward' => sprintf('%0.2f',$deal_amount * 0.02),
+                        'up_id' => $up_id,
+                        'create_time' => date("Y-m-d H:i:s",time()),
+                    ];
+
+                    $res_reward = Db::name('user_reward')->insertGetId($data_reward);
+
+                    if ($res_reward) {
+                        // 更新上级user表奖励金字段
+                        $res_before_reward = Db::name('user')->field('total_reward')->where('user_id',$up_id)->find();
+
+                        // 之前的奖励金
+                        $before_reward = $res_before_reward['total_reward'];
+                        // 获得的奖励金
+                        $get_reward = sprintf('%0.2f',$deal_amount * 0.02);
+
+                        Db::name('user')->where('user_id',$up_id)->setField('total_reward',sprintf('%0.2f',$before_reward + $get_reward));
+
+                    }
+
+                }
 
                 if ($res) {
 

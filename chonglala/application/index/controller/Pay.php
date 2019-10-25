@@ -3,6 +3,7 @@
 namespace app\index\controller;
 
 use app\common\controller\Base;
+use think\Cache;
 use think\cache\driver\Redis;
 use think\Controller;
 use think\Exception;
@@ -42,8 +43,14 @@ class Pay extends Base
         }
 
         $openid = $param['openid'];
+        // 订单总金额
+        $total_amount = round($param['total_amount'] * 100);
         // 生成唯一订单号
         $order_num = $this->order_num();
+
+        // 根据订单编号,存用户user_id,用于回调时用户奖励金
+        $user_id = $param['user_id'];
+        Cache::store('redis')->set("$order_num","$user_id",0);
 
         // 生成待支付订单
         $WxNotifyBack = new WxNotifyBack();
@@ -81,7 +88,7 @@ class Pay extends Base
             // 商户订单号
             'out_trade_no'     => $order_num,
             // 订单总金额，单位为分
-            'total_fee'        => '1',
+            'total_fee'        => $total_amount,
             // 用户标识
             'openid'           => $openid,
             // 交易类型
@@ -121,6 +128,7 @@ class Pay extends Base
             ['openid', ['require'],''],
             ['order_num', ['require'],''],
             ['before_time', ['require'],''],
+            ['user_id', ['require'],''],
         ]);
         if (!$validate->check($param)) {
             return $this->errorReturn('1001','请求参数不符合要求',$param);
@@ -131,6 +139,10 @@ class Pay extends Base
         $order_num = $param['order_num'];
         // 预约时间
         $before_time = $param['before_time'];
+
+        $user_id = $param['user_id'];
+        Cache::store('redis')->set("$order_num","$user_id",0);
+
         // 更新待支付订单的预约时间
         $Pay = new \app\index\model\Pay();
         $res = $Pay->updateOrder($order_num, $before_time);

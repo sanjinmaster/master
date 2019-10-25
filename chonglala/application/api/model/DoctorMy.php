@@ -14,7 +14,44 @@ class DoctorMy extends Base
     // 医生我的
     public function getMyInfo($id)
     {
-        return $this->field('id,mobile,head_images,username,credit,is_work,is_prove,account_amount')->where(['id' => $id])->find();
+        $row = null;
+        $res_doctor = $this->field('id,mobile,head_images,address,
+        username,credit,is_work,is_prove,account_amount')
+            ->where(['id' => $id])
+            ->find();
+
+        $row['id'] = $res_doctor['id'];
+        $row['doctor_mobile'] = $res_doctor['mobile'];
+        $row['doctor_address'] = $res_doctor['address'];
+        $row['head_images'] = $res_doctor['head_images'];
+        $row['username'] = $res_doctor['username'];
+        $row['credit'] = $res_doctor['credit'];
+        $row['is_work'] = $res_doctor['is_work'];
+        $row['is_prove'] = $res_doctor['is_prove'];
+        $row['account_amount'] = $res_doctor['account_amount'];
+
+        $res_hospital = Db::name('app_hospital_doctor')->field('id,hospital_id,doctor_id,is_join')->where(['doctor_id' => $id])->find();
+        $hospital_id = $res_hospital['hospital_id'];
+
+        $row['hospital_id'] = $res_hospital['hospital_id'];
+        $row['doctor_id'] = $res_hospital['doctor_id'];
+        $row['is_join'] = $res_hospital['is_join'];
+
+        if ($hospital_id) {
+            $res_address = Db::name('app_user_hospital')->field('address,hospital_name,store_images,mobile')->where(['id' => $hospital_id])->find();
+            $row['hospital_address'] = $res_address['address'];
+            $row['hospital_name'] = $res_address['hospital_name'];
+            $row['store_images'] = $res_address['store_images'];
+            $row['hospital_mobile'] = $res_address['mobile'];
+        }else {
+            $row['hospital_address'] = null;
+            $row['hospital_name'] = null;
+            $row['store_images'] = null;
+            $row['hospital_mobile'] = null;
+        }
+
+        return $row;
+
     }
 
     // 更换头像

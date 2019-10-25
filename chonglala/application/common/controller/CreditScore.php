@@ -33,8 +33,8 @@ class CreditScore extends Base
         $push_payload = $client->push()
             ->setPlatform('all')
             // 多个别名
-            //->addAlias(array('alias' => array($first, $second, $three)))
-                ->addAllAudience()
+            ->addAlias(array('alias' => array($first, $second, $three)))
+                //->addAllAudience()
             ->message('message content', array(
                 'title' => '订单编号',
                 // 'content_type' => 'text',
@@ -48,12 +48,11 @@ class CreditScore extends Base
         try {
 
             $response = $push_payload->send();
-            if ($response['http_code'] == 200) {
-                // 如果推送成功
-                $CreditScoreModel->makeOrder($result['out_trade_no']);
+            // 如果推送成功
+            $res = $CreditScoreModel->makeOrder($result['out_trade_no']);
+            if ($response['http_code'] == 200 && $res) {
+                return $response;
             }
-
-            return $response;
         } catch (APIConnectionException $e) {
             Log::error($e->getMessage());
         } catch (APIRequestException $e) {

@@ -14,7 +14,7 @@ class HospitalMy extends Base
     // 医院我的
     public function getMyInfo($id)
     {
-        return $this->field('id,mobile,store_images,hospital_name,credit,is_work,account_amount')->where(['id' => $id])->find();
+        return $this->field('id,mobile,hospital_name,address,store_images,hospital_name,credit,is_work,account_amount')->where(['id' => $id])->find();
     }
 
     // 更换头像

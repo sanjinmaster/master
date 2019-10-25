@@ -16,6 +16,8 @@ use think\Route;
 
 // 上传图片
 Route::post('uploadFile','common/upload/uploadFile');
+// base64图片上传
+Route::post('uploadBase64','common/upload/uploadBase64');
 // 上传字符串
 Route::post('strFileUpload','common/upload/strFileUpload');
 
@@ -113,8 +115,10 @@ Route::delete('admin/feedback/del','petadmin/Idea/delIdea');
 
 // 提现管理-列表
 Route::get('admin/take/list','petadmin/Take/takeList');
-// 提现管理-同意、拒绝
-Route::put('admin/take/agreeNo','petadmin/Take/agreeNo');
+// 提现管理-同意
+Route::put('admin/take/agreeAliPayTake','petadmin/Take/agreeAliPayTake');
+// 提现管理-拒绝
+Route::put('admin/take/noAliPayTake','petadmin/Take/noAliPayTake');
 // 提现管理-删除
 Route::delete('admin/take/del','petadmin/Take/delTakeTal');
 
@@ -197,6 +201,8 @@ Route::get('pet/speak/petList','index/Petthree/petList');
 Route::get('pet/speak/zxList','index/Petthree/zxList');
 // 咨询-宠物字典搜索
 Route::get('pet/speak/search','index/Petthree/petSearch');
+// 咨询-知识点搜索
+Route::get('pet/speak/searchZxInfo','index/SearchZx/searchZxInfo');
 
 // 购物车-删除商品
 Route::delete('pet/car/del','index/Cart/delGoods');
@@ -204,7 +210,7 @@ Route::delete('pet/car/del','index/Cart/delGoods');
 // 我的-头部个人信息
 Route::get('pet/my/personalInfo','index/My/personalInfo');
 // 分享
-Route::post('pet/my/sharePet','index/My/sharePet');
+Route::post('pet/my/sharePet','index/Share/sharePet');
 // 我的-头部个人信息-下级详情
 Route::get('pet/my/nextDetails','index/My/nextDetails');
 // 我的-头部个人信息-奖励金详情
@@ -216,7 +222,7 @@ Route::get('pet/my/moneyDetails','index/My/moneyDetails');
 // 绑定支付宝账号
 Route::post('pet/my/bindAliPay','index/My/bindAliPay');
 // 修改支付宝账号
-Route::patch('pet/my/editAliPay','index/My/editAliPay');
+Route::put('pet/my/editAliPay','index/My/updateAliPay');
 // 我的-头部个人信息-优惠券详情
 Route::get('pet/my/couponDetails','index/My/getCoupon');
 // 我的-我的订单-状态详情(待付款、待接单、待服务、待确认、已完成)
@@ -228,7 +234,7 @@ Route::delete('pet/my/cancelOrder','index/banner/banner');
 // 我的-我的订单-待付款-立即支付
 Route::put('pet/my/pay','index/banner/banner');
 // 我的-我的订单-待服务-查看地图
-Route::get('pet/my/lookMap','index/banner/banner');
+Route::get('pet/my/lookMap','index/Gap/lookGap');
 // 我的-我的订单-医生信息
 Route::get('pet/my/doctorInfo','index/Order/doctorPjInfo');
 // 我的-我的订单-待确认-确认订单
@@ -273,12 +279,24 @@ Route::put('app/forgetPwd','api/Register/forgetPwd');
 
 // 接单-认证过的医生-待接单列表
 Route::get('app/order/orderListDjd','api/Order/orderListDjd');
+// 医生待服务、待确认、已完成订单列表
+Route::get('app/order/orderListDfw','api/Order/orderListDfw');
+// 医院待服务、待确认、已完成订单列表
+Route::get('app/order/orderListDhs','api/Order/orderListDhs');
 // 待接单状态下认证过的医生或者医院抢单
 Route::put('app/order/receiptOrder','api/MeetOrder/receiptOrder');
-// 接单-认证过的医生-待接单-接单、弃单
-Route::post('app/order/agreeOrder','index/banner/banner');
-// 接单-认证过的医生-列表订单详情(待接单、待服务、待确认、已完成)
-Route::get('app/order/orderDetails','index/banner/banner');
+// 待接单状态下医院抢单
+Route::put('app/order/receiptHospital','api/MeetOrder/receiptHospital');
+// 接单-医院下面医生列表
+Route::get('app/order/doctorList','api/MeetOrder/doctorList');
+// 待接单状态下医院派单给下面的医生
+Route::put('app/order/makeOrderDoctor','api/MeetOrder/makeOrderDoctor');
+// 待接单状态下医院派单给下面的医生,医生接单
+Route::put('app/order/confirmOrder','api/MeetOrder/confirmOrder');
+// 接单-认证过的医生-待接单弃单
+Route::put('app/order/giveUpOrderDoctor','api/MeetOrder/giveUpOrderDoctor');
+// 接单-认证过的医生-列表订单详情(待接单)
+Route::get('app/order/orderDetails','api/Order/orderDetails');
 // 接单-认证过的医生-待服务-确认联系
 Route::get('app/order/waitSer','index/banner/banner');
 // 接单-认证过的医生-待服务-出发服务

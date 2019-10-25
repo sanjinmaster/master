@@ -64,7 +64,9 @@ class Base extends Controller
         require_once  EXTEND_PATH.'/jpush-api-php-client-master/src/JPush/Http.php';
     }
 
-    // 为医生用户生成别名
+    /**  为医生用户生成别名
+     * @return string
+     */
     protected function createAlias()
     {
         $charid = strtoupper(md5(uniqid(mt_rand(), true)));
@@ -72,7 +74,10 @@ class Base extends Controller
         return $uuid;
     }
 
-    // 用rsa加密
+    /**  用rsa加密
+     * @param $data
+     * @return string
+     */
     public static function rsa_encode($data)
     {
         //$pi_key =  openssl_pkey_get_private(PRIVATE_KEY);
@@ -86,7 +91,10 @@ class Base extends Controller
         return $encrypted;
     }
 
-    // 用rsa解密
+    /**  用rsa解密
+     * @param $encrypted
+     * @return mixed
+     */
     public static function rsa_decode($encrypted)
     {
         $pi_key =  openssl_pkey_get_private(PRIVATE_KEY);
@@ -96,7 +104,10 @@ class Base extends Controller
         return $decrypted;
     }
 
-    // 对象转数组
+    /**  对象转数组
+     * @param $array
+     * @return array
+     */
     public static function object_switch_array($array) {
         if(is_object($array)) {
             $array = (array)$array;
@@ -109,14 +120,22 @@ class Base extends Controller
         return $array;
     }
 
-    // 校验密码是否为弱口令及密码位数
+    /**  校验密码是否为弱口令及密码位数
+     * @param $pwd
+     * @return false|int
+     */
     public static function checkPwd($pwd)
     {
         $res = preg_match('/(?![A-Z]+$)(?![a-z]+$)(?!\d+$)(?![\W_]+$)\S{8,16}$/', $pwd);
         return $res;
     }
 
-    // 获取app端token
+    /**  获取app端token
+     * @param $mobile
+     * @param $password
+     * @param $time
+     * @return string
+     */
     public static function getToken($mobile, $password, $time)
     {
         $str = md5(uniqid(md5($mobile.$password.$time)),true);  //生成一个不会重复的字符串
@@ -285,26 +304,34 @@ class Base extends Controller
         return $arr;
     }
 
-    // 检验不同分类是否一起下单
+    /**  检验不同分类是否一起下单
+     * @param $cid
+     * @return bool
+     */
     public function checkMakePublic($cid)
     {
         // 校验选择的商品是否包含了不同的分类,以下是所有可能的组合
-        if (in_array('3',$cid) && in_array('7',$cid)) {
+        if (in_array('3',$cid) && in_array('7',$cid) && count($cid) <= 2) {
             return true;
         }
-        if (in_array('4',$cid) && in_array('8',$cid)) {
+        if (in_array('4',$cid) && in_array('8',$cid) && count($cid) <= 2) {
             return true;
         }
-        if (in_array('5',$cid) && in_array('9',$cid)) {
+        if (in_array('5',$cid) && in_array('9',$cid) && count($cid) <= 2) {
             return true;
         }
-        if (in_array('6',$cid) && in_array('10',$cid)) {
+        if (in_array('6',$cid) && in_array('10',$cid) && count($cid) <= 2) {
             return true;
         }
 
         return false;
     }
 
+    /**  Base64Img
+     * @param $img
+     * @param string $path
+     * @return array|false|string
+     */
     public function Base64Img($img, $path = 'AppUser/')
     {
         $head = 'data:image/jpeg;base64,' . $img;
@@ -336,7 +363,9 @@ class Base extends Controller
         return json_encode($ary);
     }
 
-    // 生成唯一订单号
+    /** 生成唯一订单号
+     * @return string
+     */
     protected function order_num()
     {
         return date('Ymd').substr(implode(NULL, array_map('ord', str_split(substr(uniqid(), 7, 13), 1))), 0, 11);
@@ -371,7 +400,9 @@ class Base extends Controller
         return $this->successReturn('200',$data);
     }
 
-    // 获取header头部token
+    /**  获取header头部token
+     * @return mixed|string
+     */
     protected function takeHeaderToken()
     {
         if (!Request::instance()->header('token')){
@@ -431,7 +462,11 @@ class Base extends Controller
         }
     }
 
-    // 解密req_info,用于微信退款的回调
+    /**  解密req_info,用于微信退款的回调
+     * @param $mch_key
+     * @param $req_info
+     * @return mixed
+     */
     public static function decipheringReqInfo($mch_key, $req_info)
     {
         $xml = openssl_decrypt(base64_decode($req_info),'aes-256-ecb',md5($mch_key),OPENSSL_RAW_DATA);

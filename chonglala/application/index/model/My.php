@@ -26,30 +26,21 @@ class My extends Model
     public function getNextInfo($user_id)
     {
         $where_user = [
-            'user_id' => $user_id
+            'a.user_id' => $user_id
         ];
 
-        $res = Db::name('user_relation')->field('next_id,create_time')->where($where_user)->select();
+        $res = Db::name('user_relation')
+            ->alias('a')
+            ->field('a.next_id,a.create_time,b.nickname,b.headimg')
+            ->join('user b','a.next_id = b.user_id')
+            ->where($where_user)
+            ->select();
 
         if ($res == null) {
             return null;
         }
 
-        $next_id = null;
-        $row = null;
-        foreach ($res as $item) {
-            $next_id[] = $item['next_id'];
-            $row[$item['next_id']]['create_time'] = $item['create_time'];
-        }
-        $next_str_id = join(',',$next_id);
-
-        $res_user = Db::name('user')->field('nickname,headimg')->where('id','in',$next_str_id)->select();
-        foreach ($res_user as $value) {
-            $row[$value['id']]['nickname'] = $value['nickname'];
-            $row[$value['id']]['headimg'] = $value['headimg'];
-        }
-
-        return array_values($row);
+        return $res;
     }
 
     // 分享
@@ -138,9 +129,27 @@ class My extends Model
     }
 
     // 提现奖励金
-    public function takeRewardInfo()
+    public function addReward($user_id, $take_out_amount)
     {
+        try {
+            $data = [
+              'user_id' => $user_id,
+              'take_out_amount' => $take_out_amount,
+              'sq_time' => date("Y-m-d H:i:s",time()),
+            ];
 
+            $res = Db::name('reward_take_out')->insertGetId($data);
+            return $res;
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            return $e->getMessage();
+        }
+    }
+
+    // 查找账户余额
+    public function getReward($user_id)
+    {
+        return Db::name('user')->field('total_reward')->where(['user_id' => $user_id])->find();
     }
 
     // 奖励金收支明细
@@ -197,7 +206,9 @@ class My extends Model
 
     public function editAliPay($user_id, $alipay)
     {
-        return Db::name('user_alipay')->where(['user_id' => $user_id])->update(['alipay' => $alipay,'update_time' => date("Y-M-D h:i:s",time())]);
+        return Db::name('user_alipay')
+            ->where(['user_id' => $user_id])
+            ->update(['alipay' => $alipay,'update_time' => date("Y-m-d H:i:s",time())]);
     }
 
     // 意见反馈

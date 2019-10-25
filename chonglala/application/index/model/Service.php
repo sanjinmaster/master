@@ -13,13 +13,24 @@ class Service extends Model
     // 商品列表
     public function getGoods($cid_str, $user_id)
     {
-        $res_goods = $this->field('id,cid,goods_name,price,buy_num,images_url')->where(['deleted' => 0])->where('cid','in',$cid_str)->select();
+        $res_goods = $this->field('id,cid,goods_name,price,buy_num,images_url')
+            ->where(['deleted' => 0])
+            ->where('goods_status',1)
+            ->where('cid','in',$cid_str)
+            ->select();
+
+        if ($res_goods == null) {
+            return null;
+        }
 
         $row = null;
         $rows = null;
         $data = null;
         foreach ($res_goods as $good) {
-            $value = Db::name('shop_cart')->field('cid,gid,num')->where(['user_id' => $user_id,'gid' => $good['id'],'cid' => $good['cid']])->find();
+            $value = Db::name('shop_cart')
+                ->field('cid,gid,num')
+                ->where(['user_id' => $user_id,'gid' => $good['id'],'cid' => $good['cid']])
+                ->find();
 
             $row['id'] = $good['id'];
             $row['cid'] = $good['cid'];

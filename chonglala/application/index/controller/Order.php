@@ -141,7 +141,7 @@ class Order extends Base
         return $this->successReturn('200',$res);
     }
 
-    // 待付款取消订单(此时为删除订单)
+    // 待付款、已完成取消订单(此时为删除订单)
     public function cancelOrderDfk()
     {
         $param = $this->takeDeleteParam();

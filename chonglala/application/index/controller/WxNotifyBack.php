@@ -57,11 +57,12 @@ class WxNotifyBack extends Base
         $WxNotifyBackModel = new WxNotifyBackModel();
         $res = $WxNotifyBackModel->updateOrderStatus($result);
 
-        if ($res) {
+        // 派单给app
+        /*if ($res) {
             $param = $this->takePutParam();
             $CreditScore = new CreditScore();
             $CreditScore->pushApp($param);
-        }
+        }*/
 
         return $this->successReturn('200',$res);
     }
